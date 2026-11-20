@@ -2,6 +2,7 @@ import { ImageResponse } from "next/og";
 import { SITE_NAME } from "@/lib/site";
 
 export const alt = `${SITE_NAME} : pour un monde numérique sans barrières`;
+export const dynamic = "force-static";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 

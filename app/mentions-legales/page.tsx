@@ -37,8 +37,8 @@ export default function MentionsLegales() {
       <h2>Hébergement</h2>
       <p>
         <Todo>
-          nom, adresse et site web de l’hébergeur (par exemple Vercel Inc. si le
-          site est publié sur Vercel)
+          nom, adresse et site web de l’hébergeur (par exemple Cloudflare, Inc.
+          si le site est publié sur Cloudflare)
         </Todo>
       </p>
 

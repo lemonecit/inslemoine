@@ -32,11 +32,28 @@ Site vitrine de l'Institut Lemoine Accessibilité, association loi 1901 dédiée
 ```bash
 npm install
 npm run dev     # serveur de développement (http://localhost:3000)
-npm run build   # build de production
-npm run start   # serveur de production
+npm run build   # export statique dans out/
+npm run start   # prévisualise out/ en local
 npm run lint    # ESLint
 ```
 
-## Déploiement
+## Déploiement (Cloudflare)
 
-Projet Next.js (App Router) prêt pour un hébergement sur Vercel.
+Le site est entièrement statique (`output: "export"`) : `npm run build` produit le dossier `out/`, sans serveur Node.
+
+Cloudflare Pages (ou Workers avec assets statiques), connecté au dépôt GitHub :
+
+| Réglage | Valeur |
+|---|---|
+| Build command | `npm run build` |
+| Build output directory | `out` |
+| Variable `NODE_VERSION` | `22` (le fichier `.node-version` le précise aussi) |
+| Variable `NEXT_PUBLIC_SITE_URL` | l'adresse publique, par exemple `https://www.exemple.fr` (sans `/` final) |
+
+`public/_headers` est lu par Cloudflare : en-têtes de sécurité, type MIME de `/opengraph-image` et du worker PDF, cache long pour `/_next/static/`.
+
+**Réglages Cloudflare à vérifier pour rester cohérent avec la politique de confidentialité et l'accessibilité :**
+- *Web Analytics* (balise automatique « beacon ») : désactivé, sinon un script tiers est ajouté et la politique de confidentialité devient inexacte.
+- *Email Address Obfuscation* : désactivé (Scrape Shield), il remplace le lien `mailto:` par un script.
+- *Rocket Loader* et *Auto Minify* : désactivés (ils modifient les scripts de la page).
+- Après la mise en ligne, refaire le test Lighthouse sur l'adresse publique.

@@ -1,0 +1,18 @@
+# En-têtes appliqués par Cloudflare (Pages / Workers Static Assets).
+
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), interest-cohort=()
+
+# Fichiers sans extension ou avec une extension peu courante : on précise le type.
+/opengraph-image
+  Content-Type: image/png
+
+/pdf.worker.min.mjs
+  Content-Type: text/javascript; charset=utf-8
+
+# Fichiers versionnés par Next.js : cache long.
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable

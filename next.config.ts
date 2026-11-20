@@ -1,9 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  cacheComponents: true,
-  partialPrefetching: true,
+  // Site entièrement statique : le dossier `out/` se déploie tel quel (Cloudflare, Vercel, etc.).
+  output: "export",
 };
 
 export default nextConfig;
