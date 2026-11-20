@@ -1,0 +1,13 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // Doit être identique au nom du Worker dans le tableau de bord Cloudflare.
+  "name": "inslemoine",
+  "compatibility_date": "2026-11-20",
+  "build": {
+    "command": "npm run build"
+  },
+  "assets": {
+    "directory": "./out",
+    "not_found_handling": "404-page"
+  }
+}

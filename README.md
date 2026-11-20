@@ -41,14 +41,18 @@ npm run lint    # ESLint
 
 Le site est entièrement statique (`output: "export"`) : `npm run build` produit le dossier `out/`, sans serveur Node.
 
-Cloudflare Pages (ou Workers avec assets statiques), connecté au dépôt GitHub :
+`wrangler.jsonc` (à la racine) déclare `out/` comme dossier d'assets statiques. **Ce fichier est indispensable** : sans lui, Cloudflare détecte Next.js et lance automatiquement `npx opennextjs-cloudflare build`, qui échoue avec un export statique. Son champ `name` doit être identique au nom du Worker dans le tableau de bord Cloudflare.
+
+Réglages de Workers Builds (dépôt GitHub connecté) :
 
 | Réglage | Valeur |
 |---|---|
 | Build command | `npm run build` |
-| Build output directory | `out` |
-| Variable `NODE_VERSION` | `22` (le fichier `.node-version` le précise aussi) |
-| Variable `NEXT_PUBLIC_SITE_URL` | l'adresse publique, par exemple `https://www.exemple.fr` (sans `/` final) |
+| Deploy command | `npx wrangler deploy` |
+| Variable de build `NODE_VERSION` | `22` (le fichier `.node-version` le précise aussi) |
+| Variable de build `NEXT_PUBLIC_SITE_URL` | l'adresse publique, par exemple `https://www.exemple.fr` (sans `/` final) |
+
+Vérification locale sans rien publier : `npx wrangler deploy --dry-run`.
 
 `public/_headers` est lu par Cloudflare : en-têtes de sécurité, type MIME de `/opengraph-image` et du worker PDF, cache long pour `/_next/static/`.
 
