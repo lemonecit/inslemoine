@@ -1,4 +1,5 @@
 import AccessibilityMenu from "@/components/AccessibilityMenu";
+import BrandLink from "@/components/BrandLink";
 import BrandMark from "@/components/BrandMark";
 import HeaderObserver from "@/components/HeaderObserver";
 import HeroArt from "@/components/HeroArt";
@@ -13,13 +14,13 @@ export default function Home() {
       <HeaderObserver />
       <header className="site-header">
         <div className="container header-bar">
-          <span className="brand">
+          <BrandLink className="brand">
             <BrandMark />
             <span className="brand-text">
               <span>Institut Lemoine</span>
               <span className="brand-accent">Accessibilité</span>
             </span>
-          </span>
+          </BrandLink>
           <div className="header-tools">
             <SiteNav />
             <AccessibilityMenu />
@@ -32,7 +33,7 @@ export default function Home() {
           <HeroArt />
           <div className="container hero-inner">
             <p className="hero-eyebrow">Association loi 1901 · Paris</p>
-            <h1 id="titre-principal">Institut Lemoine Accessibilité</h1>
+            <h1 id="titre-principal" tabIndex={-1}>Institut Lemoine Accessibilité</h1>
             <p className="hero-tagline">
               Pour un monde numérique sans barrières.
             </p>

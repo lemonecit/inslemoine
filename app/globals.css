@@ -402,15 +402,16 @@ html[data-header="static"] .site-header {
   fill: var(--color-accent);
 }
 
-.brand-mark-figure {
-  stroke: var(--color-on-accent);
-}
-
 .brand-mark-dot {
   fill: var(--color-on-accent);
 }
 
-/* Sur les pages internes, le nom du site est un lien vers l'accueil : il garde l'aspect du texte. */
+.brand-mark-flat {
+  fill: var(--color-on-accent);
+  opacity: 0.45;
+}
+
+/* Le nom du site est un lien vers l'accueil : il garde l'aspect du texte. */
 a.brand {
   color: var(--color-text);
   text-decoration: none;
@@ -1314,6 +1315,20 @@ address {
 .site-footer a:hover,
 .site-footer .link-button:hover {
   color: var(--color-on-dark-muted);
+}
+
+/* Sur fond sombre, le logo s'inverse : carré clair, points sombres. */
+.site-footer a.footer-brand {
+  color: var(--color-on-dark);
+}
+
+.site-footer .brand-mark-bg {
+  fill: var(--color-on-dark);
+}
+
+.site-footer .brand-mark-dot,
+.site-footer .brand-mark-flat {
+  fill: var(--color-dark);
 }
 
 .link-button {

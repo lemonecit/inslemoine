@@ -1,11 +1,20 @@
 import Link from "next/link";
+import BrandLink from "@/components/BrandLink";
+import BrandMark from "@/components/BrandMark";
 import ConsentManageButton from "@/components/ConsentManageButton";
 
 export default function SiteFooter() {
   return (
     <footer className="site-footer">
       <div className="container footer-inner">
-        <p>© Institut Lemoine Accessibilité — Association loi 1901, Paris.</p>
+        <BrandLink className="brand footer-brand">
+          <BrandMark />
+          <span className="brand-text">
+            <span>Institut Lemoine</span>
+            <span>Accessibilité</span>
+          </span>
+        </BrandLink>
+        <p>© Association loi 1901 — Paris.</p>
         <nav aria-label="Informations légales">
           <ul className="footer-links">
             <li>
