@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import AccessibilityMenu from "@/components/AccessibilityMenu";
+import BrandMark from "@/components/BrandMark";
 import HeaderObserver from "@/components/HeaderObserver";
 import SiteFooter from "@/components/SiteFooter";
 
@@ -19,7 +20,11 @@ export default function LegalPage({
       <header className="site-header">
         <div className="container header-bar">
           <Link className="brand" href="/" prefetch={false}>
-            Institut Lemoine <span className="brand-accent">Accessibilité</span>
+            <BrandMark />
+            <span className="brand-text">
+              <span>Institut Lemoine</span>
+              <span className="brand-accent">Accessibilité</span>
+            </span>
           </Link>
           <div className="header-tools">
             <AccessibilityMenu />

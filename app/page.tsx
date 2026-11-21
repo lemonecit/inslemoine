@@ -1,5 +1,7 @@
 import AccessibilityMenu from "@/components/AccessibilityMenu";
+import BrandMark from "@/components/BrandMark";
 import HeaderObserver from "@/components/HeaderObserver";
+import HeroArt from "@/components/HeroArt";
 import PdfReader from "@/components/PdfReader";
 import SiteFooter from "@/components/SiteFooter";
 import SiteNav from "@/components/SiteNav";
@@ -11,7 +13,11 @@ export default function Home() {
       <header className="site-header">
         <div className="container header-bar">
           <span className="brand">
-            Institut Lemoine <span className="brand-accent">Accessibilité</span>
+            <BrandMark />
+            <span className="brand-text">
+              <span>Institut Lemoine</span>
+              <span className="brand-accent">Accessibilité</span>
+            </span>
           </span>
           <div className="header-tools">
             <SiteNav />
@@ -22,17 +28,18 @@ export default function Home() {
 
       <main id="contenu-principal">
         <section className="hero" aria-labelledby="titre-principal">
-          <div className="container">
+          <HeroArt />
+          <div className="container hero-inner">
             <p className="hero-eyebrow">Association loi 1901 · Paris</p>
             <h1 id="titre-principal">Institut Lemoine Accessibilité</h1>
             <p className="hero-tagline">
               Pour un monde numérique sans barrières.
             </p>
             <div className="hero-actions">
-              <a className="button button-light" href="#contact">
-                Nous contacter
+              <a className="button button-primary" href="#contact">
+                Nous contacter <span aria-hidden="true">→</span>
               </a>
-              <a className="button button-ghost" href="#nos-actions">
+              <a className="button button-outline" href="#nos-actions">
                 Découvrir nos actions
               </a>
             </div>

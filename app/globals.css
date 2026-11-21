@@ -201,7 +201,6 @@ body {
   border-radius: 4px;
 }
 
-.hero :focus-visible,
 .section-contact :focus-visible,
 .site-footer :focus-visible {
   outline: var(--focus-ring-on-dark);
@@ -378,9 +377,37 @@ html[data-header="static"] .site-header {
 }
 
 .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
   font-weight: 700;
   font-size: 1.125rem;
   letter-spacing: -0.01em;
+}
+
+.brand-mark {
+  flex: none;
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+/* Nom du site sur deux lignes à côté du logo : compact et lisible. */
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.brand-mark-bg {
+  fill: var(--color-accent);
+}
+
+.brand-mark-figure {
+  stroke: var(--color-on-accent);
+}
+
+.brand-mark-dot {
+  fill: var(--color-on-accent);
 }
 
 /* Sur les pages internes, le nom du site est un lien vers l'accueil : il garde l'aspect du texte. */
@@ -938,10 +965,36 @@ html[data-contrast="dark"] .button-primary:hover {
 /* ------------------------------------------------------------------ */
 
 .hero {
-  padding-block: clamp(4.5rem, 12vw, 8.5rem);
-  background-color: var(--color-dark);
-  background-image: var(--hero-glow);
-  color: var(--color-on-dark);
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  padding-block: clamp(4rem, 9vw, 7rem);
+  background-color: var(--color-background-alt);
+  color: var(--color-text);
+}
+
+html[data-contrast] .hero {
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.hero-inner {
+  position: relative;
+  z-index: 1;
+  max-width: 70rem;
+}
+
+.hero-inner > * {
+  max-width: 36rem;
+}
+
+.hero-inner > h1 {
+  max-width: 46rem;
+}
+
+.hero h1 {
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  overflow-wrap: anywhere;
 }
 
 .hero-eyebrow {
@@ -950,21 +1003,95 @@ html[data-contrast="dark"] .button-primary:hover {
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--color-on-dark-muted);
+  color: var(--color-accent);
 }
 
 .hero-tagline {
   margin-block: 1.25rem 2.25rem;
-  max-width: 36rem;
   font-size: clamp(1.3125rem, 1.1rem + 1vw, 1.625rem);
   line-height: 1.45;
-  color: var(--color-on-dark-muted);
+  color: var(--color-text);
 }
 
 .hero-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
+}
+
+/* Décor : faisceau de lignes fines, derrière le texte et sans rôle d'information. */
+.hero-art {
+  position: absolute;
+  inset: 0 0 0 auto;
+  z-index: 0;
+  width: 70%;
+  pointer-events: none;
+}
+
+.hero-art svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.hero-art path {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 1.25;
+  vector-effect: non-scaling-stroke;
+}
+
+.hero-dot {
+  position: absolute;
+  width: 1rem;
+  height: 1rem;
+  background-color: var(--color-accent);
+  border-radius: 50%;
+  opacity: 0.55;
+}
+
+.hero-dot-a {
+  left: 3%;
+  bottom: 9%;
+}
+
+.hero-dot-b {
+  right: 24%;
+  top: 48%;
+}
+
+/* Le décor est coupé dans les thèmes à contraste renforcé : le texte seul compte. */
+html[data-contrast] .hero-art {
+  display: none;
+}
+
+@media (forced-colors: active) {
+  .hero-art {
+    display: none;
+  }
+}
+
+@media (max-width: 48rem) {
+  .hero {
+    padding-block-end: 13rem;
+  }
+
+  .hero-art {
+    inset: auto 0 0 0;
+    width: 100%;
+    height: 11rem;
+  }
+
+  .hero-dot-a {
+    left: 8%;
+    bottom: 12%;
+  }
+
+  .hero-dot-b {
+    right: 14%;
+    top: 30%;
+  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -979,6 +1106,17 @@ html[data-contrast="dark"] .button-primary:hover {
   overflow-wrap: anywhere;
   text-decoration: none;
   border-radius: var(--radius-pill);
+}
+
+.button-outline {
+  color: var(--color-text);
+  background-color: var(--color-background-alt);
+  border: 2px solid var(--color-text);
+}
+
+.button-outline:hover {
+  color: var(--color-text);
+  background-color: var(--color-background);
 }
 
 .button-light {
