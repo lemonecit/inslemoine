@@ -14,6 +14,17 @@ function config(env: Env) {
   // Städa bort blanktecken, radbrytningar och citattecken som kan ha följt med vid inklistring.
   const apiKey = (env.LLM_API_KEY ?? "").replace(/^["'\s]+|["'\s]+$/g, "");
   const model = (env.LLM_MODEL ?? "").trim();
+  // Riktiga nycklar består bara av bokstäver, siffror, bindestreck och understreck. Ett dolt tecken
+  // från inklistringen får annars leverantörens brandvägg att svara med ett tomt 400.
+  if (apiKey) {
+    const invalid = [...apiKey].filter((ch) => !/[A-Za-z0-9_-]/.test(ch)).length;
+    if (invalid > 0 || apiKey.length < 20 || apiKey.length > 400) {
+      throw new HttpError(
+        503,
+        `LLM_API_KEY ser ogiltig ut (längd ${apiKey.length}, ${invalid} ogiltiga tecken). Skapa en ny nyckel och lägg den med « wrangler secret put LLM_API_KEY --name institut-lemoine ».`,
+      );
+    }
+  }
   if (!["anthropic", "openai"].includes(provider) || !apiKey || !model) {
     throw new HttpError(
       503,
