@@ -8,11 +8,18 @@ await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
 const base = `http://127.0.0.1:${server.address().port}`;
 const browser = await chromium.launch({ channel: "chrome" });
 
+const variants = {
+  standard: null,
+  "Lexend + texte très grand + espacement": { textSize: "xlarge", font: "lexend", spacing: "wide" },
+};
+
+for (const [variant, prefs] of Object.entries(variants))
 for (const width of [320, 360, 390, 412, 600, 768]) {
   const context = await browser.newContext({ viewport: { width, height: 800 } });
-  await context.addInitScript(() => {
+  await context.addInitScript((p) => {
     localStorage.setItem("ila-consent", JSON.stringify({ at: Date.now(), choices: {} }));
-  });
+    if (p) localStorage.setItem("ila-a11y", JSON.stringify({ ...p, at: Date.now() }));
+  }, prefs);
   const page = await context.newPage();
   await page.goto(base + "/", { waitUntil: "networkidle" });
   const r = await page.evaluate(() => {
@@ -37,7 +44,7 @@ for (const width of [320, 360, 390, 412, 600, 768]) {
       overflowX: document.documentElement.scrollWidth > document.documentElement.clientWidth,
     };
   });
-  console.log(String(width).padEnd(4), JSON.stringify(r));
+  console.log(variant.slice(0, 8), String(width).padEnd(4), JSON.stringify(r));
   await context.close();
 }
 

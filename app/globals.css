@@ -997,10 +997,31 @@ html[data-contrast] .hero {
   overflow-wrap: anywhere;
 }
 
-/* « ACCESSIBILITÉ » en capitales doit tenir sur une ligne même sur un écran de 320 à 360 px. */
-@media (max-width: 40rem) {
+/* « ACCESSIBILITÉ » en capitales doit tenir sur une ligne, quel que soit l'écran, la taille de
+   texte ou la police choisie : la taille suit la largeur réelle du conteneur (cqi), jamais de
+   coupure au milieu du mot. */
+@media (max-width: 48rem) {
+  .hero-inner {
+    container-type: inline-size;
+    text-align: center;
+  }
+
+  .hero-inner > * {
+    margin-inline: auto;
+  }
+
   .hero h1 {
-    font-size: clamp(1.6rem, 8.2vw, 2.75rem);
+    font-size: min(2.75rem, 9cqi);
+    overflow-wrap: normal;
+  }
+
+  html[data-font="lexend"] .hero h1,
+  html[data-spacing="wide"] .hero h1 {
+    font-size: min(2.75rem, 7.6cqi);
+  }
+
+  .hero-actions {
+    justify-content: center;
   }
 }
 
