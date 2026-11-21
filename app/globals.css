@@ -997,6 +997,13 @@ html[data-contrast] .hero {
   overflow-wrap: anywhere;
 }
 
+/* « ACCESSIBILITÉ » en capitales doit tenir sur une ligne même sur un écran de 320 à 360 px. */
+@media (max-width: 40rem) {
+  .hero h1 {
+    font-size: clamp(1.6rem, 8.2vw, 2.75rem);
+  }
+}
+
 .hero-eyebrow {
   margin-block-end: 1rem;
   font-size: 0.9375rem;
@@ -1036,6 +1043,11 @@ html[data-contrast] .hero {
   display: block;
   width: 100%;
   height: 100%;
+}
+
+/* Deux compositions : large pour l'ordinateur, en hauteur pour le mobile. */
+.hero-art .hero-art-tall {
+  display: none;
 }
 
 .hero-bars path {
@@ -1091,15 +1103,33 @@ html[data-contrast] .hero-art {
 
 @media (max-width: 48rem) {
   .hero {
-    padding-block-end: 13rem;
+    padding-block-end: 14rem;
   }
 
+  /* Sur mobile le dessin couvre tout le hero ; il est presque invisible derrière le texte
+     et prend toute sa force dans le bas, là où se trouve le passage en braille. */
   .hero-art {
-    inset: auto 0 0 0;
+    inset: 0;
     width: 100%;
-    height: 12rem;
-    -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 30%);
-    mask-image: linear-gradient(180deg, transparent 0, #000 30%);
+    height: auto;
+    -webkit-mask-image: linear-gradient(
+      180deg,
+      transparent 0,
+      rgba(0, 0, 0, 0.16) 40%,
+      #000 76%
+    );
+    mask-image: linear-gradient(180deg, transparent 0, rgba(0, 0, 0, 0.16) 40%, #000 76%);
+  }
+}
+
+/* Écran étroit : la composition en hauteur ; entre 36 et 48 rem la composition large suffit. */
+@media (max-width: 36rem) {
+  .hero-art .hero-art-wide {
+    display: none;
+  }
+
+  .hero-art .hero-art-tall {
+    display: block;
   }
 }
 
