@@ -66,16 +66,24 @@ export async function callLlm(env: Env, request: LlmRequest): Promise<LlmRespons
       ? `${base || "https://api.anthropic.com"}/v1/messages`
       : `${base || "https://api.openai.com/v1"}/chat/completions`;
 
+  // Vissa leverantörer och brandväggar avvisar anrop utan User-Agent med ett tomt 400-svar.
+  const headers = new Headers(init.headers);
+  headers.set("user-agent", "institut-lemoine-admin/1.0");
+  headers.set("accept", "application/json");
+
   let response: Response;
   try {
-    response = await fetch(url, { ...init, signal: AbortSignal.timeout(150_000) });
+    response = await fetch(url, { ...init, headers, signal: AbortSignal.timeout(150_000) });
   } catch {
     throw new HttpError(504, "AI-motorn svarade inte i tid. Försök igen.");
   }
 
   if (!response.ok) {
     const body = (await response.text()).slice(0, 2000);
-    console.error(`LLM error ${response.status} ${response.statusText}: ${body.slice(0, 500) || "(tomt svar)"} [server: ${response.headers.get("server") ?? "?"}]`);
+    const responseHeaders = [...response.headers.entries()].map(([k, v]) => `${k}=${v.slice(0, 60)}`).join("; ");
+    console.error(
+      `LLM error ${response.status} ${response.statusText} host=${new URL(url).host}: ${body.slice(0, 500) || "(tomt svar)"} [headers: ${responseHeaders || "inga"}]`,
+    );
     // Leverantörens felmeddelande (t.ex. fel modellnamn eller saknat saldo) visas för administratören.
     // Det innehåller aldrig nyckeln : OpenAI och Anthropic maskerar den.
     let detail = "";
