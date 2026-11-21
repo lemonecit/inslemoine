@@ -11,11 +11,18 @@ export type Service = { id: string; label: string; description: string };
 
 export const SERVICES: Service[] = [];
 
+// Fenêtre d'information affichée à la première visite : la page reste verrouillée tant qu'elle
+// n'est pas validée. Sans service facultatif elle n'a qu'un bouton (« J'ai compris »).
+// Mettre à false pour ne plus l'afficher tant que SERVICES est vide.
+export const FIRST_VISIT_NOTICE = true;
+
 export const CONSENT_KEY = "ila-consent";
 
 // Recommandations CNIL : un refus est redemandé après 6 mois, un accord après 13 mois au plus.
+// La simple information (aucun service) est redemandée après 12 mois.
 const REFUSAL_MS = 6 * 30 * 24 * 60 * 60 * 1000;
 const ACCEPTANCE_MS = 13 * 30 * 24 * 60 * 60 * 1000;
+const NOTICE_MS = 365 * 24 * 60 * 60 * 1000;
 
 export type Choices = Record<string, boolean>;
 export type Consent = { decided: boolean; choices: Choices };
@@ -40,7 +47,12 @@ export function parseConsent(raw: string): Consent {
       if (typeof value !== "boolean") return none; // nouveau service : on redemande
       choices[service.id] = value;
     }
-    const maxAge = Object.values(choices).some(Boolean) ? ACCEPTANCE_MS : REFUSAL_MS;
+    const maxAge =
+      SERVICES.length === 0
+        ? NOTICE_MS
+        : Object.values(choices).some(Boolean)
+          ? ACCEPTANCE_MS
+          : REFUSAL_MS;
     if (Date.now() - data.at > maxAge) return none;
     return { decided: true, choices };
   } catch {

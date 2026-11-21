@@ -19,10 +19,12 @@ Site vitrine de l'Institut Lemoine Accessibilité, association loi 1901 dédiée
 
 ## RGPD et confidentialité
 
-État actuel : aucun cookie, aucun traceur, aucun service tiers (polices et lecteur PDF hébergés/exécutés localement). Le seul stockage est `ila-a11y` (réglages d'affichage choisis par la personne, effacé après 12 mois ou à la réinitialisation). Aucun consentement n'est donc nécessaire et aucune bannière n'est affichée.
+État actuel : aucun cookie, aucun traceur, aucun service tiers (polices et lecteur PDF hébergés/exécutés localement). Le stockage local se limite à `ila-a11y` (réglages d'affichage choisis par la personne, effacé après 12 mois ou à la réinitialisation) et `ila-consent` (mémorise le clic sur « J'ai compris », 12 mois). Aucun consentement n'est juridiquement nécessaire.
+
+- **Fenêtre d'information à la première visite** : la page est verrouillée (dialogue modal) jusqu'au clic sur « J'ai compris » (Échap vaut validation, pour ne jamais piéger une personne au clavier). Elle contient aussi des boutons de taille du texte et de contraste pour pouvoir la lire. Elle n'apparaît pas sur les pages d'information (`/confidentialite`, `/mentions-legales`, `/declaration-accessibilite`). Pour la désactiver : `FIRST_VISIT_NOTICE = false` dans `lib/consent.ts`.
 
 - Pages : `/mentions-legales`, `/confidentialite` et `/declaration-accessibilite`, liées dans le pied de page. **Les champs `[À COMPLÉTER : …]` (surlignés en jaune) doivent être renseignés, et les textes validés par un juriste avant la mise en ligne.** La déclaration d'accessibilité indique « conformité non encore évaluée » : à mettre à jour après le test avec lecteurs d'écran (NVDA, JAWS, VoiceOver) ou un audit RGAA.
-- Bannière de consentement prête mais inactive : `lib/consent.ts` (`SERVICES`) est vide. Pour ajouter un service facultatif (mesure d'audience, vidéo intégrée…) :
+- Bannière de consentement prête (trois choix égaux) mais inactive tant que `lib/consent.ts` (`SERVICES`) est vide. Pour ajouter un service facultatif (mesure d'audience, vidéo intégrée…) :
   1. l'ajouter dans `SERVICES` (`id`, `label`, `description`) : la bannière « Non merci / Je choisis / OK pour moi » et le lien « Gérer mes choix sur les cookies » du pied de page s'activent, et la politique de confidentialité liste le service ;
   2. ne charger son script que dans `<ConsentGate service="id">…</ConsentGate>` (`components/ConsentGate.tsx`).
   - Refus redemandé après 6 mois, accord après 13 mois (recommandations CNIL) ; un nouveau service redemande le choix ; Échap vaut refus.

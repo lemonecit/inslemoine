@@ -13,9 +13,10 @@ export default function Confidentialite() {
   return (
     <LegalPage eyebrow="Vos données" title="Politique de confidentialité">
       <p className="lead">
-        En bref : ce site ne dépose aucun cookie, n’utilise aucun outil de
-        mesure d’audience et ne fait appel à aucun service tiers. Il ne
-        demande donc pas votre consentement.
+        En bref : ce site ne dépose aucun cookie de suivi, n’utilise aucun outil
+        de mesure d’audience et ne fait appel à aucun service tiers. À votre
+        première visite, une fenêtre vous en informe ; vous la fermez avec
+        « J’ai compris ».
       </p>
 
       <h2>Qui est responsable ?</h2>
@@ -37,6 +38,18 @@ export default function Confidentialite() {
         votre appareil, n’est jamais envoyé à nos serveurs et sert uniquement
         à afficher le site comme vous l’avez demandé. Il est effacé au bout de
         12 mois, ou dès que vous cliquez sur « Réinitialiser ».
+      </p>
+
+      <h3>Confirmation de lecture de l’information</h3>
+      <p>
+        Lorsque vous cliquez sur « J’ai compris » dans la fenêtre d’information
+        de la première visite, ce choix est mémorisé dans le stockage local de
+        votre navigateur, sous le nom <code>ila-consent</code>, avec la date du
+        clic. Il évite de vous réafficher la fenêtre à chaque page. Il ne
+        contient aucune donnée personnelle, reste sur votre appareil et est
+        effacé au bout de 12 mois, après quoi la fenêtre s’affiche de nouveau.
+        Ce stockage est strictement nécessaire au fonctionnement de la fenêtre :
+        il ne demande pas de consentement.
       </p>
 
       <h3>Journaux techniques de l’hébergeur</h3>
