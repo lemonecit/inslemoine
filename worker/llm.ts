@@ -11,8 +11,9 @@ export type LlmResponse = { text: string; model: string };
 
 function config(env: Env) {
   const provider = (env.LLM_PROVIDER ?? "").toLowerCase();
-  const apiKey = env.LLM_API_KEY ?? "";
-  const model = env.LLM_MODEL ?? "";
+  // Städa bort blanktecken, radbrytningar och citattecken som kan ha följt med vid inklistring.
+  const apiKey = (env.LLM_API_KEY ?? "").replace(/^["'\s]+|["'\s]+$/g, "");
+  const model = (env.LLM_MODEL ?? "").trim();
   if (!["anthropic", "openai"].includes(provider) || !apiKey || !model) {
     throw new HttpError(
       503,
@@ -74,7 +75,7 @@ export async function callLlm(env: Env, request: LlmRequest): Promise<LlmRespons
 
   if (!response.ok) {
     const body = (await response.text()).slice(0, 2000);
-    console.error(`LLM error ${response.status}: ${body.slice(0, 500)}`);
+    console.error(`LLM error ${response.status} ${response.statusText}: ${body.slice(0, 500) || "(tomt svar)"} [server: ${response.headers.get("server") ?? "?"}]`);
     // Leverantörens felmeddelande (t.ex. fel modellnamn eller saknat saldo) visas för administratören.
     // Det innehåller aldrig nyckeln : OpenAI och Anthropic maskerar den.
     let detail = "";
