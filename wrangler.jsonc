@@ -3,6 +3,8 @@
   // Doit être identique au nom du Worker dans le tableau de bord Cloudflare.
   "name": "institut-lemoine",
   "main": "worker/index.ts",
+  // Behåll variabler och hemligheter som lagts till i dashboarden men inte finns i den här filen.
+  "keep_vars": true,
   "compatibility_date": "2026-11-20",
   "build": {
     "command": "npm run build"
