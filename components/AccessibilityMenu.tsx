@@ -129,7 +129,7 @@ export default function AccessibilityMenu() {
           <path d="M12 10v4.5" />
           <path d="M8.5 21l3.5-6.5 3.5 6.5" />
         </svg>
-        Accessibilité
+        <span className="a11y-toggle-label">Accessibilité</span>
       </button>
 
       <div

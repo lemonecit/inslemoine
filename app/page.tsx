@@ -2,6 +2,7 @@ import AccessibilityMenu from "@/components/AccessibilityMenu";
 import HeaderObserver from "@/components/HeaderObserver";
 import PdfReader from "@/components/PdfReader";
 import SiteFooter from "@/components/SiteFooter";
+import SiteNav from "@/components/SiteNav";
 
 export default function Home() {
   return (
@@ -13,24 +14,7 @@ export default function Home() {
             Institut Lemoine <span className="brand-accent">Accessibilité</span>
           </span>
           <div className="header-tools">
-            <nav aria-label="Navigation principale">
-              <ul className="nav-list">
-                <li>
-                  <a href="#qui-sommes-nous">Qui sommes-nous&nbsp;?</a>
-                </li>
-                <li>
-                  <a href="#nos-actions">Nos actions</a>
-                </li>
-                <li>
-                  <a href="#engagement">Engagement</a>
-                </li>
-                <li>
-                  <a className="nav-cta" href="#contact">
-                    Contact
-                  </a>
-                </li>
-              </ul>
-            </nav>
+            <SiteNav />
             <AccessibilityMenu />
           </div>
         </div>

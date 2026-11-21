@@ -16,7 +16,7 @@ export default function NotFound() {
           La page que vous cherchez n&rsquo;existe pas ou a été déplacée.
         </p>
         <p>
-          <Link className="button button-primary" href="/">
+          <Link className="button button-primary" href="/" prefetch={false}>
             Retour à l&rsquo;accueil
           </Link>
         </p>

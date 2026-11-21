@@ -9,15 +9,15 @@ export default function SiteFooter() {
         <nav aria-label="Informations légales">
           <ul className="footer-links">
             <li>
-              <Link href="/declaration-accessibilite">
+              <Link href="/declaration-accessibilite" prefetch={false}>
                 Déclaration d’accessibilité
               </Link>
             </li>
             <li>
-              <Link href="/mentions-legales">Mentions légales</Link>
+              <Link href="/mentions-legales" prefetch={false}>Mentions légales</Link>
             </li>
             <li>
-              <Link href="/confidentialite">Politique de confidentialité</Link>
+              <Link href="/confidentialite" prefetch={false}>Politique de confidentialité</Link>
             </li>
             <ConsentManageButton />
           </ul>

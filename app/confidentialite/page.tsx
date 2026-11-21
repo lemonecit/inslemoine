@@ -22,7 +22,7 @@ export default function Confidentialite() {
       <p>
         Le responsable du traitement est l’Institut Lemoine Accessibilité,
         association loi 1901 dont les coordonnées figurent dans les{" "}
-        <Link href="/mentions-legales">mentions légales</Link>. Pour toute
+        <Link href="/mentions-legales" prefetch={false}>mentions légales</Link>. Pour toute
         question sur vos données : <Todo>adresse de courriel dédiée</Todo>.
       </p>
 

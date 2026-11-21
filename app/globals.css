@@ -368,10 +368,35 @@ html[data-header="static"] .site-header {
   gap: 0.5rem 1.25rem;
 }
 
+/* Ordinateur : la navigation est toujours visible, le bouton « Menu » n'existe pas. */
+.site-nav .nav-toggle {
+  display: none;
+}
+
+.site-nav .nav-panel {
+  display: block;
+}
+
 .brand {
   font-weight: 700;
   font-size: 1.125rem;
   letter-spacing: -0.01em;
+}
+
+/* Sur les pages internes, le nom du site est un lien vers l'accueil : il garde l'aspect du texte. */
+a.brand {
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+a.brand:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+}
+
+.back {
+  margin-block-end: 1.5rem;
+  font-weight: 700;
 }
 
 .brand-accent {
@@ -421,6 +446,7 @@ html[data-header="static"] .site-header {
 /* ------------------------------------------------------------------ */
 
 .a11y-toggle,
+.nav-toggle,
 .a11y-button {
   font: inherit;
   font-weight: 700;
@@ -431,26 +457,34 @@ html[data-header="static"] .site-header {
   cursor: pointer;
 }
 
-.a11y-toggle {
+.a11y-toggle,
+.nav-toggle {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
+  min-height: 2.75rem;
   padding: 0.4rem 1.1rem;
 }
 
-.a11y-toggle svg {
+.a11y-toggle svg,
+.nav-toggle svg {
+  flex: none;
   width: 1.375rem;
   height: 1.375rem;
 }
 
 .a11y-toggle[aria-expanded="true"],
 .a11y-toggle:hover,
+.nav-toggle[aria-expanded="true"],
+.nav-toggle:hover,
 .a11y-button:hover {
   background-color: var(--color-background-alt);
 }
 
 html[data-contrast="dark"] .a11y-toggle[aria-expanded="true"],
 html[data-contrast="dark"] .a11y-toggle:hover,
+html[data-contrast="dark"] .nav-toggle[aria-expanded="true"],
+html[data-contrast="dark"] .nav-toggle:hover,
 html[data-contrast="dark"] .a11y-button:hover {
   background-color: #ffff00;
   color: #000000;
@@ -458,6 +492,8 @@ html[data-contrast="dark"] .a11y-button:hover {
 
 html[data-contrast="high"] .a11y-toggle[aria-expanded="true"],
 html[data-contrast="high"] .a11y-toggle:hover,
+html[data-contrast="high"] .nav-toggle[aria-expanded="true"],
+html[data-contrast="high"] .nav-toggle:hover,
 html[data-contrast="high"] .a11y-button:hover {
   background-color: #000000;
   color: #ffffff;
@@ -567,10 +603,118 @@ html[data-contrast] .a11y-panel {
   min-height: 2.75rem;
 }
 
+/* ------------------------------------------------------------------ */
+/* Mobile : en-tête compact, navigation repliée derrière « Menu »       */
+/* ------------------------------------------------------------------ */
+
+@media (max-width: 70rem) {
+  .header-bar {
+    flex-wrap: wrap;
+    gap: 0.5rem 0.75rem;
+    min-height: 3.75rem;
+  }
+
+  .brand {
+    flex: 1 1 8rem;
+    min-width: 0;
+    font-size: 1rem;
+    line-height: 1.25;
+  }
+
+  .header-tools {
+    flex: none;
+    flex-wrap: nowrap;
+    gap: 0.5rem;
+  }
+
+  .site-nav .nav-toggle {
+    display: inline-flex;
+  }
+
+  .a11y-toggle,
+  .nav-toggle {
+    padding-inline: 0.85rem;
+  }
+
+  .site-nav .nav-panel {
+    display: none;
+  }
+
+  .site-nav .nav-panel[data-open="true"] {
+    display: block;
+    position: absolute;
+    top: 100%;
+    right: var(--gutter);
+    z-index: 60;
+    width: min(24rem, calc(100vw - 2 * var(--gutter)));
+    max-height: calc(100dvh - 5.5rem);
+    overflow-y: auto;
+    padding: 0.75rem;
+    background-color: var(--color-background);
+    border: 2px solid var(--color-text);
+    border-radius: var(--radius-card);
+    box-shadow: 0 18px 50px -12px rgba(10, 26, 51, 0.45);
+  }
+
+  html[data-contrast] .nav-panel[data-open="true"] {
+    box-shadow: none;
+  }
+
+  .nav-list {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.25rem;
+  }
+
+  .nav-list a {
+    display: block;
+    padding: 0.85rem 1rem;
+    font-size: 1.125rem;
+    border-radius: 0.75rem;
+  }
+
+  .nav-list a:hover {
+    background-color: var(--color-background-alt);
+    text-decoration: none;
+  }
+
+  .nav-list a.nav-cta {
+    margin-block-start: 0.5rem;
+    text-align: center;
+  }
+}
+
 @media (max-width: 40rem) {
+  /* L'étiquette reste lue par les lecteurs d'écran ; seule l'icône est affichée. */
+  .a11y-toggle-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .a11y-toggle {
+    padding-inline: 0.7rem;
+  }
+
+  .site-nav .nav-panel[data-open="true"],
   .a11y-panel {
     left: var(--gutter);
+    right: var(--gutter);
     width: auto;
+  }
+
+  .pdf-card {
+    padding: 1.25rem;
+  }
+}
+
+@media (max-width: 70rem) and (forced-colors: active) {
+  .nav-toggle[aria-expanded="true"] {
+    border-width: 4px;
   }
 }
 
@@ -829,8 +973,10 @@ html[data-contrast="dark"] .button-primary:hover {
 
 .button {
   display: inline-block;
+  max-width: 100%;
   padding: 0.9rem 1.9rem;
   font-weight: 700;
+  overflow-wrap: anywhere;
   text-decoration: none;
   border-radius: var(--radius-pill);
 }

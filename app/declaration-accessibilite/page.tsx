@@ -92,7 +92,7 @@ export default function DeclarationAccessibilite() {
       </ul>
       <p>
         Vos réglages sont enregistrés uniquement sur votre appareil (voir la{" "}
-        <Link href="/confidentialite">politique de confidentialité</Link>).
+        <Link href="/confidentialite" prefetch={false}>politique de confidentialité</Link>).
       </p>
 
       <h2>Technologies utilisées</h2>

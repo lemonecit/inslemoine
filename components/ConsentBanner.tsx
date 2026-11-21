@@ -101,7 +101,7 @@ export default function ConsentBanner() {
         pas de consentement.
       </p>
       <p>
-        <Link href="/confidentialite">Lire la politique de confidentialité</Link>
+        <Link href="/confidentialite" prefetch={false}>Lire la politique de confidentialité</Link>
       </p>
 
       {details && (

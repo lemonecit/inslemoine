@@ -54,7 +54,7 @@ export default function MentionsLegales() {
       <p>
         Ce site vise la conformité au niveau AA des WCAG 2.2. Le détail de
         l’état actuel figure dans la{" "}
-        <Link href="/declaration-accessibilite">déclaration d’accessibilité</Link>.
+        <Link href="/declaration-accessibilite" prefetch={false}>déclaration d’accessibilité</Link>.
         Si vous rencontrez un défaut d’accessibilité, signalez-le-nous à
         l’adresse de contact ci-dessus : nous vous répondrons et corrigerons le
         problème.
@@ -70,7 +70,7 @@ export default function MentionsLegales() {
       <h2>Données personnelles</h2>
       <p>
         Le traitement des données personnelles est décrit dans la{" "}
-        <Link href="/confidentialite">politique de confidentialité</Link>.
+        <Link href="/confidentialite" prefetch={false}>politique de confidentialité</Link>.
       </p>
     </LegalPage>
   );
