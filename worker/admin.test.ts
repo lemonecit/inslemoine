@@ -3,8 +3,16 @@ import { test } from "node:test";
 import { importCsv, importJson, parseCsv, parsePrice } from "../lib/admin/import";
 import { isoClassOf, normalizeIsoCode } from "../lib/admin/iso9999";
 import { ideaToMarkdown } from "../lib/admin/markdown";
-import { AnalysisSchema, type Analysis, type Idea } from "../lib/admin/schema";
-import { buildabilityFromDifficulty, pughTotals } from "../lib/admin/scoring";
+import {
+  AnalysisSchema,
+  AnalyzeRequestSchema,
+  BrainstormResponseSchema,
+  CheaperResponseSchema,
+  ConceptSchema,
+  type Analysis,
+  type Idea,
+} from "../lib/admin/schema";
+import { bomTotal, buildabilityFromDifficulty, costSummary, pughTotals } from "../lib/admin/scoring";
 
 test("ISO 9999-koder normaliseras och okända klasser nekas", () => {
   assert.equal(normalizeIsoCode("22 03 18"), "22 03 18");
@@ -75,9 +83,14 @@ const analysis: Analysis = AnalysisSchema.parse({
     build_cost_estimate: "låg",
     unit_cost_estimate: "0 €",
     market_price_comparison: "1 200 € mot 0 €",
+    market_price_eur: 1200,
     assumptions: [],
     risks: ["Röstkvalitet"],
   },
+  bom: [
+    { item: "Mikrokontroller", quantity: 2, unit_cost_eur: 4.5, note: "ESP32", cheaper_alternative: "Kassera onödig modul" },
+    { item: "Hölje (3D-print)", quantity: 1, unit_cost_eur: 1.25 },
+  ],
   impact: {
     beneficiaries: "Personer med talsvårigheter",
     grant_fit: 4,
@@ -129,12 +142,65 @@ test("Markdown-exporten innehåller de viktiga avsnitten", () => {
     notes: "Ring Fondation Orange.",
     analysis,
     model: "test-modell",
+    version: 2,
     products: [{ id: "p", name: "Dyr enhet" }],
     created_at: "2026-11-21T00:00:00Z",
     updated_at: "2026-11-21T00:00:00Z",
   };
   const md = ideaToMarkdown(idea);
-  for (const part of ["# Webbaserad talsyntes", "## SWOT", "## Pugh-matris", "**+7**", "Ring Fondation Orange.", "nästa sprint"]) {
+  for (const part of [
+    "# Webbaserad talsyntes",
+    "## SWOT",
+    "## Pugh-matris",
+    "**+7**",
+    "Ring Fondation Orange.",
+    "nästa sprint",
+    "## Materiallista",
+    "Mikrokontroller (ESP32)",
+    "Uppskattad besparing: 99 %",
+    "**Version:** 2",
+  ]) {
     assert.ok(md.includes(part), `saknar: ${part}`);
   }
+});
+
+test("materialsumman och besparingen räknas i koden, inte av AI:n", () => {
+  const cost = costSummary(analysis);
+  assert.equal(cost.unit_cost_eur, 10.25);
+  assert.equal(cost.market_price_eur, 1200);
+  assert.equal(cost.saving_pct, 99);
+  assert.equal(bomTotal([]), null);
+  const noMarket = structuredClone(analysis);
+  noMarket.feasibility.market_price_eur = null;
+  assert.equal(costSummary(noMarket).saving_pct, null);
+});
+
+test("äldre analyser utan materiallista och marknadspris är fortfarande giltiga", () => {
+  const old = structuredClone(analysis) as Record<string, unknown>;
+  delete old.bom;
+  delete (old.feasibility as Record<string, unknown>).market_price_eur;
+  const parsed = AnalysisSchema.parse(old);
+  assert.deepEqual(parsed.bom, []);
+  assert.equal(parsed.feasibility.market_price_eur, null);
+  assert.equal(costSummary(parsed).unit_cost_eur, null);
+});
+
+test("koncept och billigare-svar valideras", () => {
+  const concept = ConceptSchema.parse({
+    title: "Tangentbordsfri kommunikationsapp",
+    approach: "software",
+    summary: "En PWA.",
+    target_group: "Personer utan tal",
+    how_cheaper: "Använder befintlig smartphone.",
+    unit_cost_eur: "0",
+    difficulty: 2,
+  });
+  assert.equal(concept.unit_cost_eur, 0);
+  assert.equal(concept.market_price_eur, null);
+  assert.equal(BrainstormResponseSchema.safeParse({ concepts: [] }).success, false);
+  const cheaper = CheaperResponseSchema.safeParse({ analysis, summary: "Billigare.", changes: [{ change: "Byt modul", effect: "−2 €" }] });
+  assert.equal(cheaper.success, true);
+  assert.equal(CheaperResponseSchema.safeParse({ analysis, summary: "x", changes: [] }).success, false);
+  assert.equal(AnalyzeRequestSchema.safeParse({}).success, false);
+  assert.equal(AnalyzeRequestSchema.safeParse({ concept }).success, true);
 });

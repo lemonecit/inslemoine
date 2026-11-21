@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import BrainstormView, { EMPTY_BRAINSTORM, type BrainstormState } from "./BrainstormView";
 import IdeaDetail from "./IdeaDetail";
 import IdeasView from "./IdeasView";
 import ImportView from "./ImportView";
@@ -10,6 +11,7 @@ import { Notice } from "./shared";
 
 const TABS = [
   { hash: "ideer", label: "Idéer" },
+  { hash: "brainstorma", label: "Brainstorma" },
   { hash: "produkter", label: "Produkter" },
   { hash: "importera", label: "Importera" },
 ] as const;
@@ -23,6 +25,7 @@ const getHash = () => window.location.hash.replace(/^#/, "");
 export default function AdminApp() {
   const hash = useSyncExternalStore(subscribe, getHash, () => "");
   const [ideasKey, setIdeasKey] = useState(0);
+  const [brainstorm, setBrainstorm] = useState<BrainstormState>(EMPTY_BRAINSTORM);
   const { data: status } = useApi<{ email: string; llm_configured: boolean }>("/api/status");
   const view = useRef<HTMLDivElement>(null);
   const first = useRef(true);
@@ -81,6 +84,15 @@ export default function AdminApp() {
         <div ref={view}>
           {ideaId ? (
             <IdeaDetail id={ideaId} onBack={() => go("ideer")} onChanged={() => setIdeasKey((n) => n + 1)} />
+          ) : tab === "brainstorma" ? (
+            <BrainstormView
+              state={brainstorm}
+              setState={setBrainstorm}
+              onOpenIdea={(id) => {
+                setIdeasKey((n) => n + 1);
+                go(`ide/${id}`);
+              }}
+            />
           ) : tab === "produkter" ? (
             <ProductsView
               onOpenIdea={(id) => {

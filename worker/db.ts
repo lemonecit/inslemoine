@@ -6,7 +6,10 @@ import {
   type IdeaStatus,
   type Product,
   type ProductInput,
+  type VersionInfo,
+  type VersionSource,
 } from "../lib/admin/schema";
+import { buildabilityFromDifficulty, costSummary } from "../lib/admin/scoring";
 import { HttpError } from "./http";
 
 const now = () => new Date().toISOString();
@@ -162,6 +165,7 @@ type IdeaRow = {
   notes: string;
   analysis: string;
   model: string;
+  version: number | null;
   created_at: string;
   updated_at: string;
 };
@@ -195,6 +199,7 @@ async function hydrateIdeas(db: D1Database, rows: IdeaRow[]): Promise<Idea[]> {
         notes: row.notes,
         analysis: parsed.data,
         model: row.model,
+        version: row.version ?? 1,
         products: results.filter((p) => p.idea_id === row.id).map((p) => ({ id: p.id, name: p.name })),
         created_at: row.created_at,
         updated_at: row.updated_at,
@@ -218,6 +223,8 @@ const IDEA_SORTS: Record<string, string> = {
   iso: "iso_class ASC, updated_at DESC",
 };
 
+const IDEA_SELECT = `SELECT *, (SELECT MAX(version) FROM idea_versions v WHERE v.idea_id = prototype_ideas.id) AS version FROM prototype_ideas`;
+
 export async function listIdeas(
   db: D1Database,
   filter: { status?: string; iso_class?: string; next_sprint?: boolean; sort?: string },
@@ -234,13 +241,13 @@ export async function listIdeas(
   }
   if (filter.next_sprint) where.push("next_sprint = 1");
   const order = IDEA_SORTS[filter.sort ?? "updated"] ?? IDEA_SORTS.updated;
-  const sql = `SELECT * FROM prototype_ideas ${where.length ? `WHERE ${where.join(" AND ")}` : ""} ORDER BY ${order} LIMIT 500`;
+  const sql = `${IDEA_SELECT} ${where.length ? `WHERE ${where.join(" AND ")}` : ""} ORDER BY ${order} LIMIT 500`;
   const { results } = await db.prepare(sql).bind(...params).all<IdeaRow>();
   return hydrateIdeas(db, results);
 }
 
 export async function getIdea(db: D1Database, id: string): Promise<Idea | null> {
-  const row = await db.prepare("SELECT * FROM prototype_ideas WHERE id = ?").bind(id).first<IdeaRow>();
+  const row = await db.prepare(`${IDEA_SELECT} WHERE id = ?`).bind(id).first<IdeaRow>();
   return row ? ((await hydrateIdeas(db, [row]))[0] ?? null) : null;
 }
 
@@ -280,6 +287,12 @@ export async function insertIdea(
     ...data.product_ids.map((productId) =>
       db.prepare("INSERT INTO idea_products (idea_id, product_id) VALUES (?, ?)").bind(id, productId),
     ),
+    db
+      .prepare(
+        `INSERT INTO idea_versions (idea_id, version, source, analysis, meta, created_at)
+         VALUES (?, 1, 'initial', ?, '{}', ?)`,
+      )
+      .bind(id, JSON.stringify(data.analysis), stamp),
   ];
   await db.batch(statements);
   const idea = await getIdea(db, id);
@@ -327,4 +340,78 @@ export async function patchIdea(db: D1Database, id: string, patch: IdeaPatch): P
 export async function deleteIdea(db: D1Database, id: string): Promise<boolean> {
   const result = await db.prepare("DELETE FROM prototype_ideas WHERE id = ?").bind(id).run();
   return result.meta.changes > 0;
+}
+
+export type VersionMeta = { summary?: string; changes?: { change: string; effect: string }[] };
+
+// Sparar en ny version och gör den till idéns nuvarande analys. Versionsnumret räknas i SQL så att
+// två samtidiga anrop inte får samma nummer.
+export async function addVersion(
+  db: D1Database,
+  ideaId: string,
+  analysis: Analysis,
+  source: VersionSource,
+  meta: VersionMeta,
+): Promise<Idea | null> {
+  const stamp = now();
+  const [, update] = await db.batch([
+    db
+      .prepare(
+        `INSERT INTO idea_versions (idea_id, version, source, analysis, meta, created_at)
+         SELECT ?1, COALESCE(MAX(version), 0) + 1, ?2, ?3, ?4, ?5 FROM idea_versions WHERE idea_id = ?1`,
+      )
+      .bind(ideaId, source, JSON.stringify(analysis), JSON.stringify(meta), stamp),
+    db
+      .prepare(
+        `UPDATE prototype_ideas SET analysis = ?, approach = ?, grant_fit = ?, buildability = ?, updated_at = ?
+         WHERE id = ?`,
+      )
+      .bind(
+        JSON.stringify(analysis),
+        analysis.proposal.approach,
+        analysis.impact.grant_fit,
+        buildabilityFromDifficulty(analysis.feasibility.difficulty),
+        stamp,
+        ideaId,
+      ),
+  ]);
+  if (!update.meta.changes) return null;
+  return getIdea(db, ideaId);
+}
+
+type VersionRow = { version: number; source: VersionSource; analysis: string; meta: string; created_at: string };
+
+export async function listVersions(db: D1Database, ideaId: string): Promise<VersionInfo[]> {
+  const { results } = await db
+    .prepare("SELECT version, source, analysis, meta, created_at FROM idea_versions WHERE idea_id = ? ORDER BY version DESC")
+    .bind(ideaId)
+    .all<VersionRow>();
+  return results.flatMap((row) => {
+    const parsed = AnalysisSchema.safeParse(safeJson(row.analysis));
+    if (!parsed.success) return [];
+    const meta = (safeJson(row.meta) ?? {}) as VersionMeta;
+    const cost = costSummary(parsed.data);
+    return [
+      {
+        version: row.version,
+        source: row.source,
+        summary: meta.summary ?? "",
+        changes: meta.changes ?? [],
+        unit_cost_eur: cost.unit_cost_eur,
+        market_price_eur: cost.market_price_eur,
+        saving_pct: cost.saving_pct,
+        created_at: row.created_at,
+      },
+    ];
+  });
+}
+
+export async function getVersionAnalysis(db: D1Database, ideaId: string, version: number): Promise<Analysis | null> {
+  const row = await db
+    .prepare("SELECT analysis FROM idea_versions WHERE idea_id = ? AND version = ?")
+    .bind(ideaId, version)
+    .first<{ analysis: string }>();
+  if (!row) return null;
+  const parsed = AnalysisSchema.safeParse(safeJson(row.analysis));
+  return parsed.success ? parsed.data : null;
 }

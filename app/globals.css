@@ -1584,6 +1584,11 @@ html[data-contrast="dark"] .todo {
   outline: none;
 }
 
+/* Ord i stor text, Lexend och vida avstånd får aldrig tvinga fram sidledes scroll (reflow). */
+.admin-main :is(h2, h3, h4, p, li, dt, dd, label, .admin-hint, .admin-sub) {
+  overflow-wrap: anywhere;
+}
+
 .admin-card {
   margin-block: 1.5rem;
   padding: 1.5rem;
@@ -1735,6 +1740,7 @@ html[data-contrast] .admin-notice-error {
 }
 
 .admin-table-wrap {
+  position: relative; /* contient les textes visually-hidden des cellules, sinon ils créent un défilement horizontal de la page */
   overflow-x: auto;
   margin-block: 1rem;
   border: var(--border-width) solid var(--color-border);
@@ -1771,6 +1777,11 @@ html[data-contrast] .admin-notice-error {
   font-weight: 700;
 }
 
+.admin-table .button {
+  overflow-wrap: normal;
+  white-space: nowrap;
+}
+
 .admin-sub {
   display: block;
   font-size: 0.875rem;
@@ -1781,6 +1792,29 @@ html[data-contrast] .admin-notice-error {
 .admin-pugh td {
   text-align: center;
   font-variant-numeric: tabular-nums;
+}
+
+.admin-costline {
+  margin-block: 0.5rem 1.5rem;
+  font-size: 1.125rem;
+}
+
+.admin-concepts {
+  display: grid;
+  gap: 0;
+  margin: 1.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-concepts .admin-card {
+  margin-block: 0.75rem;
+}
+
+.admin-result {
+  margin-block-start: 1.5rem;
+  padding-block-start: 1rem;
+  border-block-start: var(--border-width) solid var(--color-border);
 }
 
 .admin-dl {
@@ -1806,7 +1840,7 @@ html[data-contrast] .admin-notice-error {
 
 @media (max-width: 40rem) {
   .admin-dl {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 0.25rem;
   }
 

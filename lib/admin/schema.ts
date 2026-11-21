@@ -52,13 +52,24 @@ export type Product = ProductInput & {
 const Text = z.string().trim().min(1).max(1500);
 const TextList = (min: number, max: number) => z.array(Text).min(min).max(max);
 const Rating = z.coerce.number().int().min(1).max(5);
+const Approach = z.enum(["software", "3d_print", "hybrid"]);
+
+// En rad i materiallistan (hårdvara, material, licens eller drift). Summor räknas av koden.
+export const BomItemSchema = z.object({
+  item: z.string().trim().min(1).max(200),
+  quantity: z.coerce.number().min(0).max(100_000),
+  unit_cost_eur: z.coerce.number().min(0).max(10_000_000),
+  note: z.string().trim().max(400).default(""),
+  cheaper_alternative: z.string().trim().max(400).default(""),
+});
+export type BomItem = z.output<typeof BomItemSchema>;
 
 export const AnalysisSchema = z
   .object({
     bottlenecks: TextList(1, 8),
     proposal: z.object({
       title: z.string().trim().min(1).max(160),
-      approach: z.enum(["software", "3d_print", "hybrid"]),
+      approach: Approach,
       summary: Text,
       description: z.string().trim().min(1).max(4000),
       key_features: TextList(1, 10),
@@ -70,9 +81,13 @@ export const AnalysisSchema = z
       build_cost_estimate: Text,
       unit_cost_estimate: Text,
       market_price_comparison: Text,
+      // Marknadspris för jämförbara befintliga lösningar (grov uppskattning, EUR).
+      market_price_eur: z.coerce.number().min(0).max(10_000_000).nullable().default(null),
       assumptions: z.array(Text).max(8),
       risks: z.array(Text).max(8),
     }),
+    // Äldre idéer saknar materiallista : tom lista är giltig.
+    bom: z.array(BomItemSchema).max(40).default([]),
     impact: z.object({
       beneficiaries: Text,
       grant_fit: Rating,
@@ -123,6 +138,59 @@ export const AnalysisSchema = z
   });
 export type Analysis = z.output<typeof AnalysisSchema>;
 
+// Ett koncept är en kort idé från brainstormen, innan den utvecklats till en full analys.
+export const ConceptSchema = z.object({
+  title: z.string().trim().min(1).max(160),
+  approach: Approach,
+  summary: Text,
+  target_group: Text,
+  how_cheaper: Text,
+  unit_cost_eur: z.coerce.number().min(0).max(10_000_000).nullable().default(null),
+  market_price_eur: z.coerce.number().min(0).max(10_000_000).nullable().default(null),
+  difficulty: Rating,
+});
+export type Concept = z.output<typeof ConceptSchema>;
+
+export const BrainstormResponseSchema = z.object({
+  concepts: z.array(ConceptSchema).min(1).max(10),
+});
+
+export const BrainstormRequestSchema = z.object({
+  need: z.string().trim().min(3, "Beskriv behovet").max(1000),
+  iso_class: z.string().regex(/^\d{2}$/).optional(),
+  count: z.number().int().min(3).max(8).default(5),
+  max_unit_cost_eur: z.number().min(0).max(1_000_000).optional(),
+});
+
+export const CheaperRequestSchema = z.object({
+  target_cost_eur: z.number().min(0).max(1_000_000).optional(),
+  hint: z.string().trim().max(600).default(""),
+});
+
+export const CheaperResponseSchema = z.object({
+  analysis: AnalysisSchema,
+  summary: Text,
+  changes: z
+    .array(z.object({ change: Text, effect: Text }))
+    .min(1)
+    .max(12),
+});
+
+export const RestoreRequestSchema = z.object({ version: z.number().int().min(1) });
+
+export type VersionSource = "initial" | "cheaper" | "restore";
+
+export type VersionInfo = {
+  version: number;
+  source: VersionSource;
+  summary: string;
+  changes: { change: string; effect: string }[];
+  unit_cost_eur: number | null;
+  market_price_eur: number | null;
+  saving_pct: number | null;
+  created_at: string;
+};
+
 export type Idea = {
   id: string;
   title: string;
@@ -135,6 +203,7 @@ export type Idea = {
   notes: string;
   analysis: Analysis;
   model: string;
+  version: number;
   products: { id: string; name: string }[];
   created_at: string;
   updated_at: string;
@@ -152,11 +221,17 @@ export const IdeaPatchSchema = z
   })
   .partial();
 
-export const AnalyzeRequestSchema = z.object({
-  product_ids: z.array(z.string().min(1).max(64)).max(8).default([]),
-  iso_class: z.string().regex(/^\d{2}$/).optional(),
-  focus: z.string().trim().max(600).default(""),
-});
+export const AnalyzeRequestSchema = z
+  .object({
+    product_ids: z.array(z.string().min(1).max(64)).max(8).default([]),
+    iso_class: z.string().regex(/^\d{2}$/).optional(),
+    focus: z.string().trim().max(600).default(""),
+    // Utveckla ett koncept från brainstormen till en full analys (ingen startprodukt behövs).
+    concept: ConceptSchema.optional(),
+  })
+  .refine((r) => r.product_ids.length > 0 || r.iso_class || r.concept, {
+    message: "Välj en produkt, en ISO-klass eller ett koncept.",
+  });
 
 export const ImportParseSchema = z.object({
   format: z.enum(["csv", "json", "text"]),

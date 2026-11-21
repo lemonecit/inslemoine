@@ -18,9 +18,15 @@ const analysis = {
     build_cost_estimate: "Låg : främst arbetstid (uppskattning)",
     unit_cost_estimate: "0 € per enhet, drift under 20 €/månad (uppskattning)",
     market_price_comparison: "Befintlig lösning cirka 1 200 € mot nästan 0 € per användare (grov uppskattning)",
+    market_price_eur: 1200,
     assumptions: ["Målgruppen har tillgång till en smartphone eller dator."],
     risks: ["Röstkvaliteten varierar mellan webbläsare."],
   },
+  bom: [
+    { item: "Mikrokontroller", quantity: 2, unit_cost_eur: 4.5, note: "ESP32", cheaper_alternative: "Använd smartphonen i stället" },
+    { item: "Hölje (3D-print)", quantity: 1, unit_cost_eur: 6, note: "PLA, 40 g", cheaper_alternative: "Mindre hölje" },
+    { item: "Hosting och support per användare och år", quantity: 1, unit_cost_eur: 12 },
+  ],
   impact: {
     beneficiaries: "Personer med tal- eller kommunikationssvårigheter",
     grant_fit: 4,
@@ -57,12 +63,40 @@ const extraction = {
   ],
 };
 
+const brainstorm = {
+  concepts: [
+    { title: "Kommunikationsapp för smartphone", approach: "software", summary: "En PWA med symboler och talsyntes.", target_group: "Personer utan tal", how_cheaper: "Använder en smartphone som användaren redan äger.", unit_cost_eur: 12, market_price_eur: 1200, difficulty: 2 },
+    { title: "3D-printad ögonstyrd pekare", approach: "hybrid", summary: "Billig ramhållare med webbkamerabaserad blickstyrning.", target_group: "Personer med svåra rörelsehinder", how_cheaper: "Öppen programvara och printad mekanik.", unit_cost_eur: 45, market_price_eur: 2500, difficulty: 4 },
+    { title: "Enkel knappmatris", approach: "3d_print", summary: "Stora knappar med USB.", target_group: "Personer med nedsatt finmotorik", how_cheaper: "Standardkomponenter.", unit_cost_eur: null, market_price_eur: null, difficulty: 3 },
+  ],
+};
+
+// Billigare version : samma analys men lägre materialkostnad och en tydlig ändringslista.
+const cheaper = {
+  analysis: {
+    ...analysis,
+    proposal: { ...analysis.proposal, summary: "Version utan egen hårdvara : allt körs på användarens smartphone." },
+    bom: [{ item: "Hosting och support per användare och år", quantity: 1, unit_cost_eur: 7.2, note: "Statisk PWA på CDN" }],
+  },
+  summary: "Hårdvaran är borttagen och driften förenklad.",
+  changes: [
+    { change: "Tog bort mikrokontrollern och höljet", effect: "−15 € per enhet" },
+    { change: "Gick över till statisk hosting", effect: "−6 € per användare och år" },
+  ],
+};
+
 createServer((req, res) => {
   let body = "";
   req.on("data", (chunk) => (body += chunk));
   req.on("end", () => {
-    const extracting = body.includes("extraherar");
+    const reply = body.includes("[UPPGIFT:EXTRAHERA]")
+      ? extraction
+      : body.includes("[UPPGIFT:BRAINSTORM]")
+        ? brainstorm
+        : body.includes("[UPPGIFT:BILLIGARE]")
+          ? cheaper
+          : analysis;
     res.setHeader("content-type", "application/json");
-    res.end(JSON.stringify({ choices: [{ message: { content: JSON.stringify(extracting ? extraction : analysis) } }] }));
+    res.end(JSON.stringify({ choices: [{ message: { content: JSON.stringify(reply) } }] }));
   });
 }).listen(8799, "127.0.0.1", () => console.log("Låtsas-AI på http://127.0.0.1:8799/v1"));

@@ -1,25 +1,34 @@
 import { ZodError, type ZodType } from "zod";
 import { importCsv, importJson, recordsToProducts } from "../lib/admin/import";
+import { isoClassTitle } from "../lib/admin/iso9999";
 import { ideaToMarkdown } from "../lib/admin/markdown";
 import {
   AnalysisSchema,
   AnalyzeRequestSchema,
+  BrainstormRequestSchema,
+  BrainstormResponseSchema,
   BulkProductsSchema,
+  CheaperRequestSchema,
+  CheaperResponseSchema,
   IdeaPatchSchema,
   ImportParseSchema,
   ProductInputSchema,
+  RestoreRequestSchema,
   type Product,
 } from "../lib/admin/schema";
-import { buildabilityFromDifficulty } from "../lib/admin/scoring";
+import { buildabilityFromDifficulty, costSummary } from "../lib/admin/scoring";
 import {
+  addVersion,
   deleteIdea,
   deleteProduct,
   getIdea,
   getProducts,
+  getVersionAnalysis,
   insertIdea,
   insertProducts,
   listIdeas,
   listProducts,
+  listVersions,
   patchIdea,
   productsInClass,
   updateProduct,
@@ -27,7 +36,16 @@ import {
 import type { Env } from "./env";
 import { HttpError, fail, json, notFound, readJson, sameOrigin, SECURITY_HEADERS } from "./http";
 import { callLlm, extractJson } from "./llm";
-import { ANALYSIS_SYSTEM, EXTRACT_SYSTEM, buildAnalysisPrompt, buildExtractPrompt } from "./prompt";
+import {
+  ANALYSIS_SYSTEM,
+  BRAINSTORM_SYSTEM,
+  CHEAPER_SYSTEM,
+  EXTRACT_SYSTEM,
+  buildAnalysisPrompt,
+  buildBrainstormPrompt,
+  buildCheaperPrompt,
+  buildExtractPrompt,
+} from "./prompt";
 
 function parse<T>(schema: ZodType<T>, data: unknown): T {
   const result = schema.safeParse(data);
@@ -51,15 +69,15 @@ async function analyze(env: Env, body: unknown) {
 
   let products: Product[] = await getProducts(env.DB, ids);
   if (products.length !== ids.length) throw new HttpError(404, "En vald produkt finns inte längre.");
-  if (products.length === 0 && input.iso_class) products = await productsInClass(env.DB, input.iso_class);
-  if (products.length === 0) {
-    throw new HttpError(400, "Välj minst en produkt, eller en ISO-klass som har produkter.");
+  if (products.length === 0 && input.iso_class && !input.concept) {
+    products = await productsInClass(env.DB, input.iso_class);
+    if (products.length === 0) throw new HttpError(400, "Den ISO-klassen har inga produkter.");
   }
 
   const llm = await callLlm(env, {
     system: ANALYSIS_SYSTEM,
-    user: buildAnalysisPrompt(products, input.focus),
-    maxTokens: 7000,
+    user: buildAnalysisPrompt(products, input.focus, input.concept),
+    maxTokens: 8000,
   });
   const parsed = AnalysisSchema.safeParse(extractJson(llm.text));
   if (!parsed.success) {
@@ -76,6 +94,55 @@ async function analyze(env: Env, body: unknown) {
     model: llm.model,
     product_ids: products.map((p) => p.id),
   });
+}
+
+async function brainstorm(env: Env, body: unknown) {
+  const input = parse(BrainstormRequestSchema, body);
+  const known = input.iso_class ? await productsInClass(env.DB, input.iso_class, 8) : [];
+  const llm = await callLlm(env, {
+    system: BRAINSTORM_SYSTEM,
+    user: buildBrainstormPrompt({
+      need: input.need,
+      isoClass: input.iso_class ? { code: input.iso_class, title: isoClassTitle(input.iso_class) } : undefined,
+      maxUnitCost: input.max_unit_cost_eur,
+      count: input.count,
+      knownProducts: known,
+    }),
+    maxTokens: 5000,
+  });
+  const parsed = BrainstormResponseSchema.safeParse(extractJson(llm.text));
+  if (!parsed.success) {
+    console.error("Brainstorm validation", JSON.stringify(parsed.error.issues.slice(0, 5)));
+    throw new HttpError(502, "AI-svaret hade fel format. Försök igen.");
+  }
+  return { concepts: parsed.data.concepts, model: llm.model };
+}
+
+async function makeCheaper(env: Env, id: string, body: unknown) {
+  const input = parse(CheaperRequestSchema, body);
+  const idea = await getIdea(env.DB, id);
+  if (!idea) throw new HttpError(404, "Idén finns inte.");
+
+  const llm = await callLlm(env, {
+    system: CHEAPER_SYSTEM,
+    user: buildCheaperPrompt(idea.analysis, input.target_cost_eur, input.hint),
+    maxTokens: 9000,
+  });
+  const parsed = CheaperResponseSchema.safeParse(extractJson(llm.text));
+  if (!parsed.success) {
+    console.error("Cheaper validation", JSON.stringify(parsed.error.issues.slice(0, 5)));
+    throw new HttpError(502, "AI-svaret hade fel format. Försök igen.");
+  }
+
+  const before = costSummary(idea.analysis).unit_cost_eur;
+  const after = costSummary(parsed.data.analysis).unit_cost_eur;
+  const updated = await addVersion(env.DB, id, parsed.data.analysis, "cheaper", {
+    summary: parsed.data.summary,
+    changes: parsed.data.changes,
+  });
+  if (!updated) throw new HttpError(404, "Idén finns inte.");
+  // Modellen kan misslyckas med att sänka kostnaden : det visas i stället för att döljas.
+  return { idea: updated, cost_before: before, cost_after: after, cheaper: before !== null && after !== null ? after < before : null };
 }
 
 async function parseImport(env: Env, body: unknown) {
@@ -161,6 +228,10 @@ export async function handleApi(request: Request, env: Env, email: string): Prom
       return json({ idea: await analyze(env, await readJson(request)) }, 201);
     }
 
+    if (path === "/api/brainstorm" && method === "POST") {
+      return json(await brainstorm(env, await readJson(request)));
+    }
+
     if (path === "/api/ideas" && method === "GET") {
       const ideas = await listIdeas(env.DB, {
         status: url.searchParams.get("status") ?? undefined,
@@ -171,10 +242,11 @@ export async function handleApi(request: Request, env: Env, email: string): Prom
       return json({ ideas });
     }
 
-    const ideaMatch = path.match(/^\/api\/ideas\/([\w-]{1,64})(\/export\.md)?$/);
+    const ideaMatch = path.match(/^\/api\/ideas\/([\w-]{1,64})(\/export\.md|\/versions|\/cheaper|\/restore)?$/);
     if (ideaMatch) {
       const id = ideaMatch[1];
-      if (ideaMatch[2] && method === "GET") {
+      const sub = ideaMatch[2];
+      if (sub === "/export.md" && method === "GET") {
         const idea = await getIdea(env.DB, id);
         if (!idea) return notFound();
         return new Response(ideaToMarkdown(idea), {
@@ -185,7 +257,21 @@ export async function handleApi(request: Request, env: Env, email: string): Prom
           },
         });
       }
-      if (!ideaMatch[2]) {
+      if (sub === "/versions" && method === "GET") {
+        if (!(await getIdea(env.DB, id))) return notFound();
+        return json({ versions: await listVersions(env.DB, id) });
+      }
+      if (sub === "/cheaper" && method === "POST") {
+        return json(await makeCheaper(env, id, await readJson(request)));
+      }
+      if (sub === "/restore" && method === "POST") {
+        const { version } = parse(RestoreRequestSchema, await readJson(request));
+        const analysis = await getVersionAnalysis(env.DB, id, version);
+        if (!analysis) return notFound();
+        const idea = await addVersion(env.DB, id, analysis, "restore", { summary: `Återställd från version ${version}.` });
+        return idea ? json({ idea }) : notFound();
+      }
+      if (!sub) {
         if (method === "GET") {
           const idea = await getIdea(env.DB, id);
           return idea ? json({ idea }) : notFound();

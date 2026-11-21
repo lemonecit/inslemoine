@@ -107,9 +107,27 @@ async function cleanup(page) {
   await page.getByRole("heading", { level: 2, name: "Webbläsarbaserad talsyntes (PWA)" }).waitFor({ timeout: 30000 });
   check(await page.evaluate(() => document.activeElement?.tagName === "H2"), "fokus ska flyttas till rubriken i den nya vyn");
   await page.getByRole("table", { name: /Pugh-matris/ }).waitFor();
-  const totals = await page.locator("tfoot").innerText();
+  const totals = await page.getByRole("table", { name: /Pugh-matris/ }).locator("tfoot").innerText();
   check(totals.includes("+11"), `Pugh-summa fel (väntade +11 : 5+5+3+3+0) : ${totals}`);
   await axe(page, "idédetalj");
+
+  // Materiallista : summan räknas av koden (2×4,5 + 6 + 12 = 27 € mot marknadspris 1 200 € = 98 %)
+  const costline = () => page.locator(".admin-costline").innerText();
+  check(/27 €/.test(await costline()) && /98 % billigare/.test(await costline()), `kostnadsraden fel : ${await costline()}`);
+  await page.getByRole("table", { name: /Materiallista med antal/ }).waitFor();
+
+  // Gör billigare : ny version med lägre kostnad, och den gamla kan återställas
+  await page.getByRole("button", { name: "Gör billigare" }).click();
+  await page.getByRole("heading", { name: "Resultat: version 2" }).waitFor({ timeout: 30000 });
+  check(/99 % billigare/.test(await costline()), `kostnadsraden efter « billigare » fel : ${await costline()}`);
+  check(await page.getByText("Hårdvaran är borttagen och driften förenklad.").first().isVisible(), "ändringslistan saknas");
+  check(await page.getByText("Tog bort mikrokontrollern och höljet").first().isVisible(), "ändringarna visas inte");
+  await axe(page, "idédetalj efter « gör billigare »");
+  await page.getByRole("table", { name: /Versioner av idén/ }).waitFor();
+  check((await page.getByRole("table", { name: /Versioner av idén/ }).locator("tbody tr").count()) === 2, "två versioner förväntades");
+  await page.getByRole("button", { name: "Återställ version 1" }).click();
+  await page.waitForFunction(() => /Version\s*3/.test(document.querySelector(".admin-costline")?.textContent ?? ""), null, { timeout: 15000 });
+  check(/27 €/.test(await costline()), `återställningen ska ge tillbaka kostnaden 27 € : ${await costline()}`);
 
   // Redigera och spara
   await page.getByLabel("Titel").fill("Talsyntes för alla");
@@ -143,6 +161,19 @@ async function cleanup(page) {
   await page.getByRole("button", { name: "Ja, ta bort idén" }).click();
   await page.getByText("Inga idéer ännu").waitFor();
 
+  // Brainstorm : ingen startprodukt behövs
+  await page.getByRole("link", { name: "Brainstorma" }).click();
+  await page.getByLabel("Behov eller uppgift").fill("Personer som inte kan tala behöver kommunicera med omgivningen.");
+  await axe(page, "brainstorma (formulär)");
+  await page.getByRole("button", { name: "Ta fram idéer" }).click();
+  await page.getByRole("list", { name: "Föreslagna idéer" }).waitFor({ timeout: 30000 });
+  check((await page.getByRole("list", { name: "Föreslagna idéer" }).locator("> li").count()) === 3, "tre koncept förväntades");
+  check(await page.getByText(/ungefär 99 % billigare/).first().isVisible(), "besparingen för konceptet saknas");
+  await axe(page, "brainstorma (resultat)");
+  await page.getByRole("button", { name: /Utveckla till idé: Kommunikationsapp för smartphone/ }).click();
+  await page.getByRole("heading", { level: 2, name: "Webbläsarbaserad talsyntes (PWA)" }).waitFor({ timeout: 30000 });
+  await page.getByRole("table", { name: /Materiallista med antal/ }).waitFor();
+
   await cleanup(page);
   await context.close();
 }
@@ -152,13 +183,27 @@ async function cleanup(page) {
   const context = await browser.newContext({ viewport: { width: 320, height: 640 } });
   await context.addInitScript((prefs) => localStorage.setItem("ila-a11y", JSON.stringify({ ...prefs, at: Date.now() })), EXTREME);
   const page = await context.newPage();
-  await api(page, "POST", "/api/products", { name: "Mobiltest", iso_code: "22 03", function: "x".repeat(300) });
+  const { product } = await (await api(page, "POST", "/api/products", { name: "Mobiltest", iso_code: "22 03", function: "x".repeat(300) })).json();
+  const { idea } = await (await api(page, "POST", "/api/analyze", { product_ids: [product.id] })).json();
+  const noOverflow = async (label) =>
+    check(!(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)), `horisontell scroll på 320 px : ${label}`);
+
   await page.goto(`${BASE}/admin/prototypes#produkter`, { waitUntil: "networkidle" });
   await page.getByRole("cell", { name: /22 03/ }).waitFor();
-  check(!(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)), "horisontell scroll på 320 px");
+  await noOverflow("produkter");
   await axe(page, "produkter, 320 px, extremt läge");
   await page.getByRole("button", { name: "Ny produkt" }).click();
   await axe(page, "produktformulär, 320 px, extremt läge");
+
+  await page.goto(`${BASE}/admin/prototypes#ide/${idea.id}`, { waitUntil: "networkidle" });
+  await page.getByRole("table", { name: /Materiallista med antal/ }).waitFor();
+  await noOverflow("idédetalj");
+  await axe(page, "idédetalj, 320 px, extremt läge");
+
+  await page.goto(`${BASE}/admin/prototypes#brainstorma`, { waitUntil: "networkidle" });
+  await page.getByLabel("Behov eller uppgift").waitFor();
+  await noOverflow("brainstorma");
+  await axe(page, "brainstorma, 320 px, extremt läge");
   await cleanup(page);
   await context.close();
 }

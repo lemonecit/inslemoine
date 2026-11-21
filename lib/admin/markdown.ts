@@ -1,8 +1,28 @@
 import { APPROACH_LABELS, STATUS_LABELS, type Idea } from "./schema";
 import { isoClassTitle } from "./iso9999";
-import { pughTotals } from "./scoring";
+import { costSummary, pughTotals } from "./scoring";
 
 const list = (items: string[]) => (items.length ? items.map((i) => `- ${i}`).join("\n") : "- (inga)");
+const eur = (n: number | null) => (n === null ? "okänt" : `${n.toLocaleString("sv-SE", { maximumFractionDigits: 2 })} €`);
+
+function bomSection(idea: Idea): string[] {
+  const bom = idea.analysis.bom;
+  if (bom.length === 0) return [];
+  const cost = costSummary(idea.analysis);
+  return [
+    "## Materiallista och kostnad (uppskattning)",
+    "| Post | Antal | Styckpris | Summa | Billigare alternativ |",
+    "|---|---|---|---|---|",
+    ...bom.map(
+      (r) =>
+        `| ${r.item}${r.note ? ` (${r.note})` : ""} | ${r.quantity} | ${eur(r.unit_cost_eur)} | ${eur(Math.round(r.quantity * r.unit_cost_eur * 100) / 100)} | ${r.cheaper_alternative || "–"} |`,
+    ),
+    `| **Summa** | | | **${eur(cost.unit_cost_eur)}** | |`,
+    "",
+    `Marknadspris för jämförbara lösningar: ${eur(cost.market_price_eur)}.${cost.saving_pct !== null ? ` Uppskattad besparing: ${cost.saving_pct} %.` : ""}`,
+    "",
+  ];
+}
 
 // Underlag för bidragsansökningar. Allt som kommer från AI-modellen är uppskattningar.
 export function ideaToMarkdown(idea: Idea): string {
@@ -25,7 +45,7 @@ export function ideaToMarkdown(idea: Idea): string {
     `- **Lösningstyp:** ${APPROACH_LABELS[a.proposal.approach]}`,
     `- **ISO 9999-klass:** ${idea.iso_class ? `${idea.iso_class} ${isoClassTitle(idea.iso_class)}` : "ej angiven"}`,
     `- **Analyserade produkter:** ${idea.products.map((p) => p.name).join(", ") || "–"}`,
-    `- **Bidragspotential:** ${idea.grant_fit}/5 · **Enkel att bygga:** ${idea.buildability}/5`,
+    `- **Bidragspotential:** ${idea.grant_fit}/5 · **Enkel att bygga:** ${idea.buildability}/5 · **Version:** ${idea.version}`,
     "",
     "## Flaskhalsar i dagens lösningar",
     list(a.bottlenecks),
@@ -56,6 +76,7 @@ export function ideaToMarkdown(idea: Idea): string {
     "**Risker**",
     list(a.feasibility.risks),
     "",
+    ...bomSection(idea),
     "## Samhällsnytta och bidragspotential",
     `- **Målgrupp:** ${a.impact.beneficiaries}`,
     `- **Passform för bidrag (1–5):** ${a.impact.grant_fit} – ${a.impact.grant_fit_rationale}`,

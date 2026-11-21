@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { isoClassTitle } from "@/lib/admin/iso9999";
 import { APPROACH_LABELS, IDEA_STATUSES, STATUS_LABELS, type Idea } from "@/lib/admin/schema";
+import { costSummary } from "@/lib/admin/scoring";
 import { useApi } from "./api";
 import { IsoSelect, Notice, Stars } from "./shared";
 
@@ -74,6 +75,7 @@ export default function IdeasView({ onOpen, reloadKey }: { onOpen: (id: string) 
                 <th scope="col">Typ</th>
                 <th scope="col">ISO</th>
                 <th scope="col">Status</th>
+                <th scope="col">Kostnad per enhet</th>
                 <th scope="col">Bidragspotential</th>
                 <th scope="col">Enkel att bygga</th>
                 <th scope="col">Sprint</th>
@@ -97,6 +99,12 @@ export default function IdeasView({ onOpen, reloadKey }: { onOpen: (id: string) 
                   <td>{APPROACH_LABELS[idea.approach]}</td>
                   <td>{idea.iso_class ? `${idea.iso_class} ${isoClassTitle(idea.iso_class)}` : "–"}</td>
                   <td>{STATUS_LABELS[idea.status]}</td>
+                  <td>
+                    {(() => {
+                      const c = costSummary(idea.analysis);
+                      return c.unit_cost_eur === null ? "–" : `${c.unit_cost_eur.toLocaleString("sv-SE", { maximumFractionDigits: 2 })} €${c.saving_pct !== null ? ` (${c.saving_pct} % billigare)` : ""}`;
+                    })()}
+                  </td>
                   <td>
                     <Stars value={idea.grant_fit} label="Bidragspotential" />
                   </td>

@@ -30,3 +30,29 @@ export function pughTotals(pugh: Analysis["pugh"]): PughResult[] {
 export function buildabilityFromDifficulty(difficulty: number): number {
   return Math.min(5, Math.max(1, 6 - difficulty));
 }
+
+export type CostSummary = {
+  // Summa av antal × styckpris. null om materiallistan är tom (då finns inget att räkna på).
+  unit_cost_eur: number | null;
+  market_price_eur: number | null;
+  // Besparing mot marknadspriset i procent (negativ = dyrare än marknaden).
+  saving_pct: number | null;
+};
+
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+// Besparing mot marknadspriset i procent (negativ = dyrare). null om något saknas.
+export function savingPercent(unit: number | null, market: number | null): number | null {
+  return unit !== null && market !== null && market > 0 ? Math.round((1 - unit / market) * 100) : null;
+}
+
+export function bomTotal(bom: Analysis["bom"]): number | null {
+  if (bom.length === 0) return null;
+  return round2(bom.reduce((sum, row) => sum + row.quantity * row.unit_cost_eur, 0));
+}
+
+export function costSummary(analysis: Analysis): CostSummary {
+  const unit = bomTotal(analysis.bom);
+  const market = analysis.feasibility.market_price_eur;
+  return { unit_cost_eur: unit, market_price_eur: market, saving_pct: savingPercent(unit, market) };
+}
