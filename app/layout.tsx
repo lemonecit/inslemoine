@@ -1,7 +1,14 @@
 import type { Metadata, Viewport } from "next";
 import { Atkinson_Hyperlegible, Lexend } from "next/font/google";
 import { INIT_SCRIPT } from "@/lib/a11y-prefs";
-import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
+import {
+  SITE_DESCRIPTION,
+  SITE_NAME,
+  SITE_SLOGAN,
+  SITE_TOPICS,
+  SITE_URL,
+  SITE_URL_CONFIGURED,
+} from "@/lib/site";
 import FocusAssist from "@/components/FocusAssist";
 import ConsentBanner from "@/components/ConsentBanner";
 import "./globals.css";
@@ -43,27 +50,49 @@ export const metadata: Metadata = {
     title: `${SITE_NAME} | Pour un monde numérique sans barrières`,
     description: SITE_DESCRIPTION,
   },
-  robots: { index: true, follow: true },
+  robots: { index: SITE_URL_CONFIGURED, follow: SITE_URL_CONFIGURED },
+  // Codes de validation Search Console / Bing (facultatifs, à fournir au moment de la construction).
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
+    other: process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION
+      ? { "msvalidate.01": process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION }
+      : undefined,
+  },
 };
 
 export const viewport: Viewport = {
   themeColor: "#0a1a33",
 };
 
-const organization = {
+const structuredData = {
   "@context": "https://schema.org",
-  "@type": "NGO",
-  name: SITE_NAME,
-  url: SITE_URL,
-  description: SITE_DESCRIPTION,
-  slogan: "Pour un monde numérique sans barrières.",
-  areaServed: "FR",
-  inLanguage: "fr",
-  address: {
-    "@type": "PostalAddress",
-    addressLocality: "Paris",
-    addressCountry: "FR",
-  },
+  "@graph": [
+    {
+      "@type": "NGO",
+      "@id": `${SITE_URL}/#organization`,
+      name: SITE_NAME,
+      url: SITE_URL,
+      description: SITE_DESCRIPTION,
+      slogan: SITE_SLOGAN,
+      knowsAbout: SITE_TOPICS,
+      areaServed: "FR",
+      foundingLocation: "Paris, France",
+      address: {
+        "@type": "PostalAddress",
+        addressLocality: "Paris",
+        addressCountry: "FR",
+      },
+    },
+    {
+      "@type": "WebSite",
+      "@id": `${SITE_URL}/#website`,
+      url: SITE_URL,
+      name: SITE_NAME,
+      description: SITE_DESCRIPTION,
+      inLanguage: "fr-FR",
+      publisher: { "@id": `${SITE_URL}/#organization` },
+    },
+  ],
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -78,7 +107,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify(organization).replace(/</g, "\\u003c"),
+            __html: JSON.stringify(structuredData).replace(/</g, "\\u003c"),
           }}
         />
       </head>
