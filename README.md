@@ -49,7 +49,31 @@ npm run start      # prévisualise out/ en local
 npm run lint       # ESLint
 npm run typecheck  # TypeScript
 npm run test:a11y  # axe-core + confidentialité sur 14 scénarios (après npm run build)
+npm run test:unit  # tests unitaires du Worker (Cloudflare Access, import, scores)
+npm run cf:dev     # Worker local complet (site + /admin + D1 locale) sur http://127.0.0.1:8787
 ```
+
+## Outil d'administration (/admin/prototypes)
+
+Vue interne, jamais publique, pour l'analyse de produits d'aide technique (ISO 9999 / EASTIN) et la génération d'idées de prototypes par une IA : fiche produit, import, analyse (goulots d'étranglement, proposition, faisabilité et coûts, utilité sociale et potentiel de subvention, SWOT, matrice de Pugh), suivi (Brouillon, Prioritaire, En développement, Archivé), notes, export Markdown et PDF (impression). L'interface est en suédois.
+
+**Architecture.** Le site public reste statique. Le Worker (`worker/index.ts`) ne s'exécute que pour `/admin/*` et `/api/*` (`assets.run_worker_first` dans `wrangler.jsonc`) ; tout le reste est servi directement par les assets. Données dans **Cloudflare D1** (`migrations/`, tables `existing_products`, `prototype_ideas`, `idea_products`). Code partagé (schémas zod, import CSV/JSON, scores de Pugh, export Markdown, classes ISO) dans `lib/admin/`, interface dans `components/admin/`.
+
+**Sécurité (défense en profondeur).**
+1. **Cloudflare Access** devant `/admin*` et `/api/*` : le trafic non autorisé est bloqué avant d'atteindre le Worker.
+2. **Le Worker vérifie lui-même** le jeton Access (`Cf-Access-Jwt-Assertion` : signature RS256, émetteur, `aud`, expiration, adresse e-mail dans `ADMIN_EMAILS`) et **refuse tout par défaut** (404 identique à une page inexistante). Une configuration incomplète verrouille l'outil. L'adresse `workers.dev` est donc protégée aussi.
+3. Les appels modifiants doivent provenir de la même origine (protection CSRF). Toutes les réponses `/admin` et `/api` portent `X-Robots-Tag: noindex, nofollow, noarchive` et `Cache-Control: no-store` ; la page porte aussi `<meta name="robots" content="noindex">`. `/admin` n'apparaît ni dans `sitemap.xml` ni dans `robots.txt` (pour ne pas annoncer le chemin).
+4. Le contournement local (`ALLOW_LOCAL_DEV=1`, fichier `.dev.vars` ignoré par Git) ne fonctionne que sur `localhost` / `127.0.0.1`.
+
+**Mise en service (une seule fois).**
+1. Base D1 : `npx wrangler d1 create inslemoine-admin`, copier le `database_id` dans `wrangler.jsonc` (`d1_databases`), puis `npx wrangler d1 migrations apply DB --remote`. Pour appliquer les migrations à chaque déploiement : commande de déploiement `npx wrangler d1 migrations apply DB --remote && npx wrangler deploy`.
+2. Cloudflare Zero Trust, *Access > Applications > Add > Self-hosted* : domaine `institut-lemoine.fr`, chemins `/admin*` et `/api/*` ; politique *Allow* pour votre adresse e-mail (code à usage unique par e-mail ou connexion Google). Relever l'**Application Audience (AUD) Tag** et le nom d'équipe (`xxx.cloudflareaccess.com`).
+3. Dans `wrangler.jsonc` (`vars`) : `ACCESS_TEAM_DOMAIN`, `ACCESS_AUD`, `ADMIN_EMAILS` (liste séparée par des virgules).
+4. IA : `LLM_PROVIDER` (`anthropic` ou `openai`, ce dernier pour toute API compatible OpenAI avec `LLM_BASE_URL`), `LLM_MODEL` (nom exact du modèle choisi) dans `vars`, et la clé en secret : `npx wrangler secret put LLM_API_KEY`. Ne jamais mettre la clé dans le dépôt.
+
+**Données et droit.** Aucune collecte automatique : l'outil ne contacte jamais EASTIN ni une autre base. Chercher sur le site, copier le texte (ou utiliser le signet fourni dans l'onglet Importer) ou charger un CSV/JSON, puis vérifier avant de sauvegarder, dans le respect des conditions d'utilisation de la source. Les intitulés des classes ISO 9999 sont un résumé propre au projet (`lib/admin/iso9999.ts`), pas le texte de la norme. Les textes envoyés à l'IA sont traités par le fournisseur choisi : n'y mettre aucune donnée personnelle. Tout ce que l'IA produit est une estimation à vérifier (coûts, délais, programmes de financement) ; les totaux de Pugh sont recalculés par le code, pas par l'IA.
+
+**Tests.** `npm run test:unit` (jeton Access, import, scores, export) et `scripts/admin-check.mjs` (parcours complet dans Chrome avec axe-core, y compris 320 px et réglages extrêmes) contre un Worker local et une fausse IA (`scripts/mock-llm.mjs`), exécutés par la CI.
 
 ## Contrôles automatiques
 

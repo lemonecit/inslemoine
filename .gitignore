@@ -19,6 +19,7 @@
 
 # wrangler
 .wrangler/
+.dev.vars*
 
 # production
 /build

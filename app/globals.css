@@ -1484,3 +1484,350 @@ html[data-contrast="dark"] .todo {
   padding: 0;
   font-weight: 700;
 }
+
+/* ------------------------------------------------------------------ */
+/* Adminverktyget (/admin/prototypes) : intern vy, aldrig indexerad     */
+/* ------------------------------------------------------------------ */
+
+.admin-header {
+  padding-block-start: 1.25rem;
+  background-color: var(--color-dark);
+  color: var(--color-on-dark);
+}
+
+.admin-header-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.5rem 2rem;
+}
+
+.admin-header-inner > div {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+}
+
+.admin-header h1,
+.admin-kicker,
+.admin-user {
+  overflow-wrap: anywhere;
+}
+
+.admin-header h1 {
+  margin: 0;
+  font-size: clamp(1.75rem, 1.4rem + 1.5vw, 2.5rem);
+}
+
+.admin-kicker {
+  margin: 0 0 0.25rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-on-dark-muted);
+}
+
+.admin-user {
+  margin: 0;
+  color: var(--color-on-dark-muted);
+}
+
+.admin-header :focus-visible {
+  outline-color: var(--color-on-dark);
+}
+
+.admin-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-tabs a {
+  display: block;
+  padding: 0.75rem 1.25rem;
+  font-weight: 700;
+  color: var(--color-on-dark);
+  text-decoration: none;
+  border-radius: 0.5rem 0.5rem 0 0;
+}
+
+.admin-tabs a:hover {
+  background-color: var(--color-border-on-dark);
+}
+
+.admin-tabs a[aria-current="page"] {
+  color: var(--color-text);
+  background-color: var(--color-background);
+}
+
+.admin-main {
+  padding-block: 2rem 4rem;
+}
+
+.admin-main h2 {
+  margin-block: 0 1.25rem;
+}
+
+.admin-main h3 {
+  margin-block: 0 0.75rem;
+}
+
+.admin-main h4 {
+  margin-block: 1.25rem 0.5rem;
+}
+
+.admin-main [tabindex="-1"]:focus {
+  outline: none;
+}
+
+.admin-card {
+  margin-block: 1.5rem;
+  padding: 1.5rem;
+  background-color: var(--color-background);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-card);
+}
+
+.admin-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem;
+  margin-block-end: 1.5rem;
+}
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  gap: 0 1.25rem;
+}
+
+.admin-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-block-end: 1rem;
+  min-inline-size: 0;
+}
+
+.admin-toolbar .admin-field {
+  margin-block-end: 0;
+}
+
+.admin-field label,
+.admin-fieldset legend {
+  font-weight: 700;
+}
+
+.admin-hint {
+  font-size: 0.9375rem;
+  color: var(--color-text);
+  opacity: 0.85;
+}
+
+.admin-field input,
+.admin-field select,
+.admin-field textarea {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+  color: var(--color-text);
+  background-color: var(--color-background);
+  border: 2px solid var(--color-text);
+  border-radius: 0.5rem;
+}
+
+.admin-field textarea {
+  resize: vertical;
+}
+
+.admin-fieldset {
+  margin: 0 0 0.75rem;
+  padding: 0;
+  border: 0;
+}
+
+.admin-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  margin-inline-end: 1.25rem;
+  font-weight: 700;
+}
+
+.admin-radio input,
+.admin-table input[type="checkbox"] {
+  inline-size: 1.4rem;
+  block-size: 1.4rem;
+  accent-color: var(--color-accent);
+}
+
+.admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.admin-confirm {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.admin-main .button {
+  font: inherit;
+  font-weight: 700;
+  padding: 0.6rem 1.25rem;
+  cursor: pointer;
+  text-align: center;
+}
+
+.admin-main .button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.admin-danger {
+  color: #9b1c1c;
+  border-color: #9b1c1c;
+}
+
+.button-danger {
+  color: #ffffff;
+  background-color: #9b1c1c;
+  border: 2px solid #9b1c1c;
+}
+
+html[data-contrast] .admin-danger {
+  color: var(--color-text);
+  border-color: var(--color-text);
+}
+
+html[data-contrast] .button-danger {
+  color: var(--color-background);
+  background-color: var(--color-text);
+  border-color: var(--color-text);
+}
+
+.admin-notice {
+  margin-block: 1rem;
+  padding: 0.75rem 1rem;
+  font-weight: 700;
+  background-color: var(--color-background);
+  border: var(--border-width) solid var(--color-border);
+  border-inline-start: 0.5rem solid var(--color-accent);
+  border-radius: 0.5rem;
+}
+
+.admin-notice-error {
+  border-inline-start-color: #9b1c1c;
+}
+
+html[data-contrast] .admin-notice-error {
+  border-inline-start-color: var(--color-text);
+}
+
+.admin-table-wrap {
+  overflow-x: auto;
+  margin-block: 1rem;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-card);
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: var(--color-background);
+}
+
+.admin-table caption {
+  padding: 0.75rem 1rem;
+  text-align: start;
+  font-weight: 700;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 0.75rem 1rem;
+  text-align: start;
+  vertical-align: top;
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.admin-table thead th,
+.admin-table tfoot th,
+.admin-table tfoot td {
+  background-color: var(--color-background-alt);
+}
+
+.admin-table tbody th {
+  font-weight: 700;
+}
+
+.admin-sub {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 400;
+  opacity: 0.85;
+}
+
+.admin-pugh td {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-dl {
+  display: grid;
+  grid-template-columns: minmax(0, 14rem) minmax(0, 1fr);
+  gap: 0.5rem 1.5rem;
+  margin: 0;
+}
+
+.admin-dl dt {
+  font-weight: 700;
+}
+
+.admin-dl dd {
+  margin: 0;
+}
+
+.admin-swot {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  gap: 1rem 2rem;
+}
+
+@media (max-width: 40rem) {
+  .admin-dl {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+  }
+
+  .admin-dl dd {
+    margin-block-end: 0.75rem;
+  }
+}
+
+@media print {
+  .admin-header,
+  .admin-no-print,
+  .skip-link {
+    display: none !important;
+  }
+
+  .admin-main {
+    padding: 0;
+  }
+
+  .admin-card {
+    break-inside: avoid;
+    border-color: #000;
+  }
+}

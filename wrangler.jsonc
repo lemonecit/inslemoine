@@ -2,12 +2,34 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   // Doit être identique au nom du Worker dans le tableau de bord Cloudflare.
   "name": "inslemoine",
+  "main": "worker/index.ts",
   "compatibility_date": "2026-11-20",
   "build": {
     "command": "npm run build"
   },
   "assets": {
     "directory": "./out",
-    "not_found_handling": "404-page"
+    "binding": "ASSETS",
+    "not_found_handling": "404-page",
+    // Workern körs bara för adminverktyget och dess API. Resten är den statiska webbplatsen.
+    "run_worker_first": ["/admin", "/admin/*", "/api/*"]
+  },
+  "d1_databases": [
+    {
+      // Skapa databasen en gång : npx wrangler d1 create inslemoine-admin
+      // och klistra in database_id här (se README, « Outil d'administration »).
+      "binding": "DB",
+      "database_name": "inslemoine-admin",
+      "migrations_dir": "migrations"
+    }
+  ],
+  // Cloudflare Access : se README, avsnittet « Adminverktyget ». Tomma värden = adminverktyget är låst.
+  // Hemligheten LLM_API_KEY läggs aldrig här : npx wrangler secret put LLM_API_KEY
+  "vars": {
+    "ACCESS_TEAM_DOMAIN": "",
+    "ACCESS_AUD": "",
+    "ADMIN_EMAILS": "",
+    "LLM_PROVIDER": "anthropic",
+    "LLM_MODEL": ""
   }
 }

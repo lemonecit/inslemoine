@@ -7,17 +7,21 @@
     "build": "next build",
     "start": "serve out",
     "lint": "eslint",
-    "typecheck": "next typegen && tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit && tsc --noEmit -p worker/tsconfig.json",
+    "test:unit": "tsx --test worker/*.test.ts",
     "test:a11y": "node scripts/a11y-check.mjs",
+    "cf:dev": "npm run build && wrangler d1 migrations apply DB --local && wrangler dev",
     "postinstall": "node scripts/copy-pdf-worker.mjs"
   },
   "dependencies": {
     "next": "16.4.6",
     "pdfjs-dist": "^6.5.438",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261121.1",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
@@ -27,6 +31,8 @@
     "playwright-core": "^1.65.1",
     "serve": "^14.2.8",
     "serve-handler": "^6.1.8",
-    "typescript": "^5"
+    "tsx": "^4.23.15",
+    "typescript": "^5",
+    "wrangler": "^4.166.0"
   }
 }

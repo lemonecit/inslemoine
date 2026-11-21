@@ -65,7 +65,7 @@ export default function ConsentBanner() {
   const visible =
     enabled &&
     !serverRender &&
-    ((!consent.decided && !INFO_PAGES.includes(pathname)) || reopened);
+    ((!consent.decided && !INFO_PAGES.includes(pathname) && !pathname.startsWith("/admin")) || reopened);
 
   useEffect(() => {
     if (SERVICES.length === 0) return;
