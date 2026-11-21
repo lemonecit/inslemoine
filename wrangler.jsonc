@@ -30,6 +30,6 @@
     "ACCESS_AUD": "",
     "ADMIN_EMAILS": "",
     "LLM_PROVIDER": "openai",
-    "LLM_MODEL": ""
+    "LLM_MODEL": "gpt-5.6-terra"
   }
 }
