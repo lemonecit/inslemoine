@@ -16,10 +16,10 @@
   },
   "d1_databases": [
     {
-      // Skapa databasen en gång : npx wrangler d1 create inslemoine-admin
-      // och klistra in database_id här (se README, « Outil d'administration »).
+      // Databasen skapades i EU (--jurisdiction eu). Se README, « Outil d'administration ».
       "binding": "DB",
       "database_name": "inslemoine-admin",
+      "database_id": "0aa382e3-7cab-41c8-b900-e411de2d8350",
       "migrations_dir": "migrations"
     }
   ],
@@ -29,7 +29,7 @@
     "ACCESS_TEAM_DOMAIN": "",
     "ACCESS_AUD": "",
     "ADMIN_EMAILS": "",
-    "LLM_PROVIDER": "anthropic",
+    "LLM_PROVIDER": "openai",
     "LLM_MODEL": ""
   }
 }
