@@ -73,9 +73,19 @@ export async function callLlm(env: Env, request: LlmRequest): Promise<LlmRespons
   }
 
   if (!response.ok) {
-    // Svarskroppen kan innehålla uppgifter om kontot : den loggas men visas inte.
-    console.error("LLM error", response.status, (await response.text()).slice(0, 500));
-    throw new HttpError(502, `AI-motorn svarade med fel (${response.status}). Kontrollera nyckel, modell och saldo.`);
+    const body = (await response.text()).slice(0, 2000);
+    console.error(`LLM error ${response.status}: ${body.slice(0, 500)}`);
+    // Leverantörens felmeddelande (t.ex. fel modellnamn eller saknat saldo) visas för administratören.
+    // Det innehåller aldrig nyckeln : OpenAI och Anthropic maskerar den.
+    let detail = "";
+    try {
+      const parsed = JSON.parse(body) as { error?: { message?: string } | string };
+      detail = typeof parsed.error === "string" ? parsed.error : (parsed.error?.message ?? "");
+    } catch {
+      // Svaret var inte JSON.
+    }
+    detail = detail.replace(/sk-[A-Za-z0-9_*.-]{6,}/g, "sk-…").slice(0, 300);
+    throw new HttpError(502, `AI-motorn svarade med fel (${response.status})${detail ? `: ${detail}` : ". Kontrollera nyckel, modell och saldo."}`);
   }
 
   const data = (await response.json()) as {
