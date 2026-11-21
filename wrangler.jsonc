@@ -26,9 +26,9 @@
   // Cloudflare Access : se README, avsnittet « Adminverktyget ». Tomma värden = adminverktyget är låst.
   // Hemligheten LLM_API_KEY läggs aldrig här : npx wrangler secret put LLM_API_KEY
   "vars": {
-    "ACCESS_TEAM_DOMAIN": "",
-    "ACCESS_AUD": "",
-    "ADMIN_EMAILS": "",
+    "ACCESS_TEAM_DOMAIN": "solitary-star-f63f.cloudflareaccess.com",
+    "ACCESS_AUD": "565d896fd060081a2072cd6ba2eb4ea8e49d461b9c52f54f3cbe798a3323dee8",
+    "ADMIN_EMAILS": "pierre.lemonec@gmail.com",
     "LLM_PROVIDER": "openai",
     "LLM_MODEL": "gpt-5.6-terra"
   }
