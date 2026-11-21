@@ -7,7 +7,6 @@ import {
   SITE_SLOGAN,
   SITE_TOPICS,
   SITE_URL,
-  SITE_URL_CONFIGURED,
 } from "@/lib/site";
 import FocusAssist from "@/components/FocusAssist";
 import ConsentBanner from "@/components/ConsentBanner";
@@ -50,7 +49,7 @@ export const metadata: Metadata = {
     title: `${SITE_NAME} | Pour un monde numérique sans barrières`,
     description: SITE_DESCRIPTION,
   },
-  robots: { index: SITE_URL_CONFIGURED, follow: SITE_URL_CONFIGURED },
+  robots: { index: true, follow: true },
   // Codes de validation Search Console / Bing (facultatifs, à fournir au moment de la construction).
   verification: {
     google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,

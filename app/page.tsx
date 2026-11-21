@@ -5,6 +5,7 @@ import HeroArt from "@/components/HeroArt";
 import PdfReader from "@/components/PdfReader";
 import SiteFooter from "@/components/SiteFooter";
 import SiteNav from "@/components/SiteNav";
+import { CONTACT_EMAIL } from "@/lib/site";
 
 export default function Home() {
   return (
@@ -220,7 +221,7 @@ export default function Home() {
             <p>
               <a
                 className="button button-light"
-                href="mailto:contact@lemoine-accessibilite.fr"
+                href={`mailto:${CONTACT_EMAIL}`}
               >
                 Nous écrire par courriel
               </a>

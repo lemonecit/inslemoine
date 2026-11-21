@@ -29,11 +29,11 @@ Site vitrine de l'Institut Lemoine Accessibilité, association loi 1901 dédiée
   1. l'ajouter dans `SERVICES` (`id`, `label`, `description`) : la bannière « Non merci / Je choisis / OK pour moi » et le lien « Gérer mes choix sur les cookies » du pied de page s'activent, et la politique de confidentialité liste le service ;
   2. ne charger son script que dans `<ConsentGate service="id">…</ConsentGate>` (`components/ConsentGate.tsx`).
   - Refus redemandé après 6 mois, accord après 13 mois (recommandations CNIL) ; un nouveau service redemande le choix ; Échap vaut refus.
-- Adresse publique : variable d'environnement `NEXT_PUBLIC_SITE_URL`. L'adresse `contact@lemoine-accessibilite.fr` de la section Contact est un exemple à remplacer.
+- Adresse publique : `https://institut-lemoine.fr` (par défaut dans `lib/site.ts`, remplaçable via la variable de build `NEXT_PUBLIC_SITE_URL`). L'adresse de contact `contact@institut-lemoine.fr` (`CONTACT_EMAIL`, `lib/site.ts`) doit exister chez le fournisseur du nom de domaine.
 
 ## Référencement (SEO) et IA
 
-- Tant que `NEXT_PUBLIC_SITE_URL` n'est pas définie, toutes les pages sont en `noindex` (brouillon : l'URL canonique pointerait vers un domaine qui n'est pas le nôtre). Une fois la variable définie, les pages sont indexables.
+- Les pages sont indexables ; l'URL canonique, le sitemap, le JSON-LD et `llms.txt` utilisent l'adresse publique ci-dessus.
 - Données structurées JSON-LD (`@graph` : `NGO` + `WebSite`), `sitemap.xml`, `robots.txt` (robots de recherche IA explicitement autorisés : OAI-SearchBot, GPTBot, ClaudeBot, PerplexityBot, Google-Extended…), image Open Graph générée.
 - `/llms.txt` : résumé du site pour les assistants IA (`app/llms.txt/route.ts`), construit à partir de `lib/site.ts`.
 - Validation Google Search Console / Bing : variables de build facultatives `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` et `NEXT_PUBLIC_BING_SITE_VERIFICATION` (le code fourni par le service, sans les balises).
@@ -73,7 +73,7 @@ Réglages de Workers Builds (dépôt GitHub connecté) :
 | Build command | `npm run build` |
 | Deploy command | `npx wrangler deploy` |
 | Variable de build `NODE_VERSION` | `22` (le fichier `.node-version` le précise aussi) |
-| Variable de build `NEXT_PUBLIC_SITE_URL` | l'adresse publique, par exemple `https://www.exemple.fr` (sans `/` final) |
+| Variable de build `NEXT_PUBLIC_SITE_URL` (facultative) | remplace l'adresse publique par défaut `https://institut-lemoine.fr` (sans `/` final) |
 
 Vérification locale sans rien publier : `npx wrangler deploy --dry-run`.
 

@@ -1,12 +1,11 @@
-// Adresse publique du site. À définir via NEXT_PUBLIC_SITE_URL (Vercel : Settings > Environment Variables).
-// La valeur de repli est un exemple à remplacer par le vrai nom de domaine.
+// Adresse publique du site. Peut être remplacée via NEXT_PUBLIC_SITE_URL (par exemple pour un
+// aperçu de test), sans « / » final.
 export const SITE_URL = (
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.lemoine-accessibilite.fr"
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://institut-lemoine.fr"
 ).replace(/\/$/, "");
 
-// Tant que l'adresse réelle n'est pas définie, la page reste en « noindex » : les moteurs ne
-// doivent pas indexer un brouillon dont l'URL canonique pointerait vers un domaine qui n'est pas le nôtre.
-export const SITE_URL_CONFIGURED = Boolean(process.env.NEXT_PUBLIC_SITE_URL);
+// Adresse de contact : la boîte doit exister chez le fournisseur du nom de domaine.
+export const CONTACT_EMAIL = "contact@institut-lemoine.fr";
 
 export const SITE_NAME = "Institut Lemoine Accessibilité";
 
