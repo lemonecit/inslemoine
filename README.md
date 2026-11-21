@@ -34,11 +34,23 @@ Site vitrine de l'Institut Lemoine Accessibilité, association loi 1901 dédiée
 
 ```bash
 npm install
-npm run dev     # serveur de développement (http://localhost:3000)
-npm run build   # export statique dans out/
-npm run start   # prévisualise out/ en local
-npm run lint    # ESLint
+npm run dev        # serveur de développement (http://localhost:3000)
+npm run build      # export statique dans out/
+npm run start      # prévisualise out/ en local
+npm run lint       # ESLint
+npm run typecheck  # TypeScript
+npm run test:a11y  # axe-core + confidentialité sur 14 scénarios (après npm run build)
 ```
+
+## Contrôles automatiques
+
+`npm run test:a11y` (`scripts/a11y-check.mjs`) ouvre le site exporté dans Chrome et vérifie, pour 14 scénarios (ordinateur, mobile, 320 px avec réglages extrêmes, menus ouverts, fenêtre de première visite, mode lecture, lecteur PDF, pages juridiques, 404) :
+
+- aucune violation axe-core (WCAG 2.2 AA et bonnes pratiques) ;
+- les promesses de la politique de confidentialité : aucune requête vers un autre domaine, aucun cookie, aucune erreur de console ni réponse HTTP en erreur ;
+- pas de défilement horizontal sur mobile (reflow).
+
+Le workflow `.github/workflows/ci.yml` exécute lint, typecheck, build et ce contrôle à chaque `push` sur `main` et à chaque pull request. Pour ajouter une page ou un état à surveiller, ajouter un scénario dans `scenarios`. Chrome est requis (`CHROME_PATH` pour indiquer un autre emplacement).
 
 ## Déploiement (Cloudflare)
 
