@@ -37,6 +37,8 @@ const api = (page, method, path, body) =>
   });
 
 async function cleanup(page) {
+  const { calls } = await (await api(page, "GET", "/api/calls?sort=updated")).json();
+  for (const c of calls) await api(page, "DELETE", `/api/calls/${c.id}`);
   const { ideas } = await (await api(page, "GET", "/api/ideas")).json();
   for (const i of ideas) await api(page, "DELETE", `/api/ideas/${i.id}`);
   const { products } = await (await api(page, "GET", "/api/products")).json();
@@ -174,6 +176,60 @@ async function cleanup(page) {
   await page.getByRole("heading", { level: 2, name: "Webbläsarbaserad talsyntes (PWA)" }).waitFor({ timeout: 30000 });
   await page.getByRole("table", { name: /Materiallista med antal/ }).waitFor();
 
+  // Finansiering : en utlysning från inklistrad text, kommande datum, kalender, checklista, matchning och utkast
+  await page.getByRole("link", { name: "Finansiering" }).click();
+  await page.getByText("Inga kommande datum").waitFor();
+  await axe(page, "finansiering (tom)");
+  await page.getByRole("button", { name: "Ny utlysning" }).click();
+  await page.getByLabel("Text från utlysningen").fill("Appel à projets Numérique inclusif. Date limite : 15 mars 2027. Associations loi 1901.");
+  await axe(page, "finansiering (klistra in)");
+  await page.getByRole("button", { name: "Sammanfatta med AI" }).click();
+  await page.getByRole("heading", { name: "Granska och spara" }).waitFor({ timeout: 30000 });
+  check((await page.getByLabel("Deadline").inputValue()) === "2027-03-15", "deadline från AI:n ska fyllas i");
+  await axe(page, "finansiering (granska)");
+  await page.getByRole("button", { name: "Spara utlysning" }).click();
+  await page.getByRole("link", { name: "Appel à projets Numérique inclusif" }).first().waitFor();
+  check(await page.getByText("2027-03-15").first().isVisible(), "deadline ska synas i listan och tidslinjen");
+  await axe(page, "finansiering (lista med tidslinje)");
+  const ics = await (await api(page, "GET", "/api/calls/calendar.ics")).text();
+  check(ics.includes("BEGIN:VEVENT") && ics.includes("DTSTART;VALUE=DATE:20270315"), "kalenderfilen ska innehålla deadline");
+
+  await page.getByRole("table", { name: "Utlysningar och bidrag" }).getByRole("link", { name: "Appel à projets Numérique inclusif" }).click();
+  await page.getByRole("heading", { level: 2, name: "Appel à projets Numérique inclusif" }).waitFor();
+  await page.getByRole("button", { name: "Skapa från krav och standardunderlag" }).click();
+  await page.getByText(/0 av \d+ klara/).waitFor();
+  await page.getByRole("checkbox", { name: "Statuts" }).check();
+  await page.getByText(/1 av \d+ klara/).waitFor();
+  await page.getByLabel("Egen punkt").fill("Ring till programansvarig");
+  await page.getByRole("button", { name: "Lägg till" }).click();
+  await page.getByRole("checkbox", { name: "Ring till programansvarig" }).waitFor();
+
+  await page.getByRole("button", { name: "Matcha mot idéer" }).click();
+  await page.getByRole("table", { name: /Hur väl varje idé passar/ }).waitFor({ timeout: 30000 });
+  check(await page.getByText("Kräver bokslut som föreningen ännu saknar.").isVisible(), "hinder och luckor ska visas");
+  check((await page.getByText("Passform: 4 av 5").count()) >= 1, "passformen ska visas som text");
+
+  await page.getByRole("button", { name: "Skriv utkast" }).click();
+  await page.getByRole("heading", { name: "Redigera utkast" }).waitFor({ timeout: 30000 });
+  await page.getByText(/2 platshållare \[À COMPLÉTER\] återstår/).waitFor();
+  await page.getByLabel("Text (markdown)").fill("# Demande\n\nTexte final sans placeholder pour la fondation, suffisamment long pour être valide.");
+  await page.getByRole("button", { name: "Spara utkast" }).click();
+  await page.getByText("Utkastet är sparat.").waitFor();
+  await page.getByText(/Inga platshållare kvar/).waitFor();
+  const calls = (await (await api(page, "GET", "/api/calls?sort=updated")).json()).calls;
+  const { call } = await (await api(page, "GET", `/api/calls/${calls[0].id}`)).json();
+  check(call.drafts.length === 1 && call.checklist.length >= 4 && call.matches.length >= 1, "utlysningen ska ha utkast, checklista och matchning");
+  const exported = await (await api(page, "GET", `/api/drafts/${call.drafts[0].id}/export.md`)).text();
+  check(exported.includes("Texte final"), "utkastet ska kunna exporteras som Markdown");
+  await axe(page, "utlysning (detalj med checklista, matchning och utkast)");
+
+  await page.getByLabel("Status").selectOption("preparing");
+  await page.getByRole("button", { name: "Spara ändringar" }).click();
+  await page.getByText("Ändringarna är sparade.").waitFor();
+  await page.getByRole("button", { name: "Ta bort utlysningen" }).click();
+  await page.getByRole("button", { name: "Ja, ta bort utlysningen" }).click();
+  await page.getByText("Inga utlysningar ännu").waitFor();
+
   await cleanup(page);
   await context.close();
 }
@@ -204,6 +260,24 @@ async function cleanup(page) {
   await page.getByLabel("Behov eller uppgift").waitFor();
   await noOverflow("brainstorma");
   await axe(page, "brainstorma, 320 px, extremt läge");
+
+  const { call: created } = await (
+    await api(page, "POST", "/api/calls", {
+      title: "Appel à projets avec un titre assez long pour tester le reflow",
+      funder: "Fondation Exemple",
+      kind: "foundation",
+      deadline: "2027-03-15",
+      requirements: ["Statuts", "Budget prévisionnel"],
+    })
+  ).json();
+  await page.goto(`${BASE}/admin/prototypes#finansiering`, { waitUntil: "networkidle" });
+  await page.getByRole("link", { name: /Appel à projets avec un titre/ }).first().waitFor();
+  await noOverflow("finansiering");
+  await axe(page, "finansiering, 320 px, extremt läge");
+  await page.goto(`${BASE}/admin/prototypes#bidrag/${created.id}`, { waitUntil: "networkidle" });
+  await page.getByRole("button", { name: "Skapa från krav och standardunderlag" }).waitFor();
+  await noOverflow("utlysning");
+  await axe(page, "utlysning, 320 px, extremt läge");
   await cleanup(page);
   await context.close();
 }

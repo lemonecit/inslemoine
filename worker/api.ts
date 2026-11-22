@@ -1,4 +1,3 @@
-import { ZodError, type ZodType } from "zod";
 import { importCsv, importJson, recordsToProducts } from "../lib/admin/import";
 import { isoClassTitle } from "../lib/admin/iso9999";
 import { ideaToMarkdown } from "../lib/admin/markdown";
@@ -34,7 +33,8 @@ import {
   updateProduct,
 } from "./db";
 import type { Env } from "./env";
-import { HttpError, fail, json, notFound, readJson, sameOrigin, SECURITY_HEADERS } from "./http";
+import { HttpError, badFormat, fail, json, notFound, parse, readJson, sameOrigin, SECURITY_HEADERS } from "./http";
+import { handleFunding } from "./funding-api";
 import { callLlm, extractJson } from "./llm";
 import {
   ANALYSIS_SYSTEM,
@@ -46,25 +46,6 @@ import {
   buildCheaperPrompt,
   buildExtractPrompt,
 } from "./prompt";
-
-function parse<T>(schema: ZodType<T>, data: unknown): T {
-  const result = schema.safeParse(data);
-  if (result.success) return result.data;
-  throw new HttpError(
-    400,
-    "Ogiltiga uppgifter.",
-    (result.error as ZodError).issues.slice(0, 8).map((i) => ({ path: i.path.join("."), message: i.message })),
-  );
-}
-
-// Säger vilket fält som inte stämde, så att felet går att åtgärda (eller försöka om) utan att gissa.
-function badFormat(error: ZodError): string {
-  const where = error.issues
-    .slice(0, 3)
-    .map((i) => `${i.path.join(".") || "svaret"}: ${i.message}`)
-    .join("; ");
-  return `AI-svaret hade fel format (${where}). Försök igen.`;
-}
 
 function mostCommon(values: (string | null)[]): string | null {
   const counts = new Map<string, number>();
@@ -295,6 +276,9 @@ export async function handleApi(request: Request, env: Env, email: string): Prom
         }
       }
     }
+
+    const funding = await handleFunding(request, env, path, method, url);
+    if (funding) return funding;
 
     return notFound();
   } catch (error) {

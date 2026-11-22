@@ -1,3 +1,5 @@
+import type { ZodError, ZodType } from "zod";
+
 export const SECURITY_HEADERS: Record<string, string> = {
   "Cache-Control": "no-store",
   "X-Robots-Tag": "noindex, nofollow, noarchive",
@@ -53,4 +55,23 @@ export class HttpError extends Error {
   ) {
     super(message);
   }
+}
+
+export function parse<T>(schema: ZodType<T>, data: unknown): T {
+  const result = schema.safeParse(data);
+  if (result.success) return result.data;
+  throw new HttpError(
+    400,
+    "Ogiltiga uppgifter.",
+    (result.error as ZodError).issues.slice(0, 8).map((i) => ({ path: i.path.join("."), message: i.message })),
+  );
+}
+
+// Säger vilket fält i ett AI-svar som inte stämde, så att felet går att åtgärda utan att gissa.
+export function badFormat(error: ZodError): string {
+  const where = error.issues
+    .slice(0, 3)
+    .map((i) => `${i.path.join(".") || "svaret"}: ${i.message}`)
+    .join("; ");
+  return `AI-svaret hade fel format (${where}). Försök igen.`;
 }
