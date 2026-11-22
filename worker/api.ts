@@ -57,6 +57,15 @@ function parse<T>(schema: ZodType<T>, data: unknown): T {
   );
 }
 
+// Säger vilket fält som inte stämde, så att felet går att åtgärda (eller försöka om) utan att gissa.
+function badFormat(error: ZodError): string {
+  const where = error.issues
+    .slice(0, 3)
+    .map((i) => `${i.path.join(".") || "svaret"}: ${i.message}`)
+    .join("; ");
+  return `AI-svaret hade fel format (${where}). Försök igen.`;
+}
+
 function mostCommon(values: (string | null)[]): string | null {
   const counts = new Map<string, number>();
   for (const v of values) if (v) counts.set(v, (counts.get(v) ?? 0) + 1);
@@ -82,7 +91,7 @@ async function analyze(env: Env, body: unknown) {
   const parsed = AnalysisSchema.safeParse(extractJson(llm.text));
   if (!parsed.success) {
     console.error("Analysis validation", JSON.stringify(parsed.error.issues.slice(0, 5)));
-    throw new HttpError(502, "AI-svaret hade fel format. Försök igen.");
+    throw new HttpError(502, badFormat(parsed.error));
   }
 
   const analysis = parsed.data;
@@ -113,7 +122,7 @@ async function brainstorm(env: Env, body: unknown) {
   const parsed = BrainstormResponseSchema.safeParse(extractJson(llm.text));
   if (!parsed.success) {
     console.error("Brainstorm validation", JSON.stringify(parsed.error.issues.slice(0, 5)));
-    throw new HttpError(502, "AI-svaret hade fel format. Försök igen.");
+    throw new HttpError(502, badFormat(parsed.error));
   }
   return { concepts: parsed.data.concepts, model: llm.model };
 }
@@ -131,7 +140,7 @@ async function makeCheaper(env: Env, id: string, body: unknown) {
   const parsed = CheaperResponseSchema.safeParse(extractJson(llm.text));
   if (!parsed.success) {
     console.error("Cheaper validation", JSON.stringify(parsed.error.issues.slice(0, 5)));
-    throw new HttpError(502, "AI-svaret hade fel format. Försök igen.");
+    throw new HttpError(502, badFormat(parsed.error));
   }
 
   const before = costSummary(idea.analysis).unit_cost_eur;

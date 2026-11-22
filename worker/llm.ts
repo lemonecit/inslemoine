@@ -15,8 +15,10 @@ function config(env: Env) {
   const apiKey = (env.LLM_API_KEY ?? "").replace(/^["'\s]+|["'\s]+$/g, "");
   const model = (env.LLM_MODEL ?? "").trim();
   // Riktiga nycklar består bara av bokstäver, siffror, bindestreck och understreck. Ett dolt tecken
-  // från inklistringen får annars leverantörens brandvägg att svara med ett tomt 400.
-  if (apiKey) {
+  // från inklistringen får annars leverantörens brandvägg att svara med ett tomt 400. Kontrollen hoppas
+  // över mot den lokala låtsas-AI:n (http://localhost), som godtar vilken nyckel som helst.
+  const localMock = /^http:\/\/(localhost|127\.0\.0\.1)[:/]/.test((env.LLM_BASE_URL ?? "").trim() + "/");
+  if (apiKey && !localMock) {
     const invalid = [...apiKey].filter((ch) => !/[A-Za-z0-9_-]/.test(ch)).length;
     if (invalid > 0 || apiKey.length < 20 || apiKey.length > 400) {
       throw new HttpError(

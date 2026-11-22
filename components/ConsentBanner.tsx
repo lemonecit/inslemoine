@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { openDialog } from "@/lib/dialog";
 import {
   FIRST_VISIT_NOTICE,
   OPEN_EVENT,
@@ -81,7 +82,7 @@ export default function ConsentBanner() {
 
   useEffect(() => {
     const dialog = dialogRef.current;
-    if (visible && dialog && !dialog.open) dialog.showModal();
+    if (visible && dialog) openDialog(dialog);
   }, [visible]);
 
   // Fokus tillbaka först när dialogen är borta (bakgrunden är inaktiv så länge den är modal).
