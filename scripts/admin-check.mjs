@@ -198,7 +198,7 @@ async function cleanup(page) {
   await page.getByRole("heading", { level: 2, name: "Appel à projets Numérique inclusif" }).waitFor();
   await page.getByRole("button", { name: "Skapa från krav och standardunderlag" }).click();
   await page.getByText(/0 av \d+ klara/).waitFor();
-  await page.getByRole("checkbox", { name: "Statuts" }).check();
+  await page.getByRole("checkbox", { name: "Statuts", exact: true }).check();
   await page.getByText(/1 av \d+ klara/).waitFor();
   await page.getByLabel("Egen punkt").fill("Ring till programansvarig");
   await page.getByRole("button", { name: "Lägg till" }).click();
