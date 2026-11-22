@@ -49,29 +49,90 @@ export type Product = ProductInput & {
   updated_at: string;
 };
 
-const Text = z.string().trim().min(1).max(1500);
-const TextList = (min: number, max: number) => z.array(Text).min(min).max(max);
-const Rating = z.coerce.number().int().min(1).max(5);
-const Approach = z.enum(["software", "3d_print", "hybrid"]);
+// AI-modeller är slarviga med formen : null i stället för tom text, siffror som text, för långa texter
+// och listor, synonymer för lösningstyp. Schemat rättar sådant i stället för att avvisa hela svaret.
+// Det som fortfarande avvisas är det som verkligen saknas (t.ex. ingen titel eller ingen lista alls).
+const clip = (max: number) => (s: string) => (s.length > max ? `${s.slice(0, max - 1)}…` : s);
+const nullToEmpty = (v: unknown) => (v === null || v === undefined ? "" : typeof v === "number" ? String(v) : v);
+const toNumber = (v: unknown): number => {
+  if (typeof v === "number") return v;
+  if (typeof v !== "string" || v.trim() === "") return Number.NaN;
+  return Number(v.replace(/[^\d.,-]/g, "").replace(",", "."));
+};
+
+const ShortText = (max: number) => z.preprocess(nullToEmpty, z.string().trim().min(1)).transform(clip(max));
+const OptText = (max: number) => z.preprocess(nullToEmpty, z.string().trim()).transform(clip(max));
+const Text = ShortText(1500);
+
+const List = <T extends z.ZodType>(item: T, min: number, max: number) =>
+  z
+    .preprocess(
+      (v) => (Array.isArray(v) ? v.filter((x) => x !== null && !(typeof x === "string" && x.trim() === "")) : v ?? []),
+      z.array(item).min(min),
+    )
+    .transform((items) => items.slice(0, max));
+const TextList = (min: number, max: number) => List(Text, min, max);
+
+const Rating = z
+  .preprocess(toNumber, z.number())
+  .transform((n) => Math.min(5, Math.max(1, Math.round(n))));
+const Money = z.preprocess(toNumber, z.number().min(0)).transform((n) => Math.min(n, 10_000_000));
+const MoneyOrNull = z.preprocess((v) => {
+  if (v === null || v === undefined || v === "") return null;
+  const n = toNumber(v);
+  return Number.isFinite(n) && n >= 0 ? Math.min(n, 10_000_000) : null;
+}, z.number().nullable());
+
+const Approach = z.preprocess((v) => {
+  if (typeof v !== "string") return v;
+  const s = v.toLowerCase();
+  if (s.includes("hybrid")) return "hybrid";
+  if (s.includes("3d") || s.includes("print") || s.includes("mekan")) return "3d_print";
+  if (s.includes("soft") || s.includes("mjuk") || s.includes("app") || s.includes("web")) return "software";
+  return v;
+}, z.enum(["software", "3d_print", "hybrid"]));
 
 // En rad i materiallistan (hårdvara, material, licens eller drift). Summor räknas av koden.
 export const BomItemSchema = z.object({
-  item: z.string().trim().min(1).max(200),
-  quantity: z.coerce.number().min(0).max(100_000),
-  unit_cost_eur: z.coerce.number().min(0).max(10_000_000),
-  note: z.string().trim().max(400).default(""),
-  cheaper_alternative: z.string().trim().max(400).default(""),
+  item: ShortText(200),
+  quantity: z.preprocess(toNumber, z.number().min(0)).transform((n) => Math.min(n, 100_000)),
+  unit_cost_eur: Money,
+  note: OptText(400),
+  cheaper_alternative: OptText(400),
 });
 export type BomItem = z.output<typeof BomItemSchema>;
+
+const Pugh = z.object({
+  baseline: ShortText(200),
+  criteria: List(
+    z.object({
+      name: ShortText(120),
+      weight: z.preprocess(toNumber, z.number()).transform((n) => Math.min(5, Math.max(1, Math.round(n)))),
+    }),
+    2,
+    10,
+  ),
+  options: List(
+    z.object({
+      name: ShortText(200),
+      scores: z.preprocess(
+        (v) => (Array.isArray(v) ? v.map(toNumber).map((n) => (Number.isFinite(n) ? n : 0)) : []),
+        z.array(z.number()),
+      ),
+    }),
+    1,
+    4,
+  ),
+});
 
 export const AnalysisSchema = z
   .object({
     bottlenecks: TextList(1, 8),
     proposal: z.object({
-      title: z.string().trim().min(1).max(160),
+      title: ShortText(160),
       approach: Approach,
       summary: Text,
-      description: z.string().trim().min(1).max(4000),
+      description: ShortText(4000),
       key_features: TextList(1, 10),
       accessibility_notes: Text,
     }),
@@ -82,77 +143,66 @@ export const AnalysisSchema = z
       unit_cost_estimate: Text,
       market_price_comparison: Text,
       // Marknadspris för jämförbara befintliga lösningar (grov uppskattning, EUR).
-      market_price_eur: z.coerce.number().min(0).max(10_000_000).nullable().default(null),
-      assumptions: z.array(Text).max(8),
-      risks: z.array(Text).max(8),
+      market_price_eur: MoneyOrNull,
+      assumptions: TextList(0, 8),
+      risks: TextList(0, 8),
     }),
-    // Äldre idéer saknar materiallista : tom lista är giltig.
-    bom: z.array(BomItemSchema).max(40).default([]),
+    // Äldre idéer saknar materiallista : tom lista är giltig. Ogiltiga rader hoppas över.
+    bom: z
+      .preprocess(
+        (v) => (Array.isArray(v) ? v.filter((row) => BomItemSchema.safeParse(row).success) : []),
+        z.array(BomItemSchema),
+      )
+      .transform((rows) => rows.slice(0, 40)),
     impact: z.object({
       beneficiaries: Text,
       grant_fit: Rating,
       grant_fit_rationale: Text,
-      funding_tracks: z.array(Text).max(6),
+      funding_tracks: TextList(0, 6),
       open_source_potential: Text,
       scalability: Text,
     }),
     swot: z.object({
-      strengths: TextList(1, 6),
-      weaknesses: TextList(1, 6),
-      opportunities: TextList(1, 6),
-      threats: TextList(1, 6),
+      strengths: TextList(0, 6),
+      weaknesses: TextList(0, 6),
+      opportunities: TextList(0, 6),
+      threats: TextList(0, 6),
     }),
-    pugh: z.object({
-      baseline: z.string().trim().min(1).max(200),
-      criteria: z
-        .array(
-          z.object({
-            name: z.string().trim().min(1).max(120),
-            weight: z.coerce.number().int().min(1).max(5),
-          }),
-        )
-        .min(3)
-        .max(10),
-      options: z
-        .array(
-          z.object({
-            name: z.string().trim().min(1).max(200),
-            scores: z.array(z.coerce.number().int().min(-1).max(1)),
-          }),
-        )
-        .min(1)
-        .max(4),
-    }),
+    pugh: Pugh,
   })
-  .superRefine((analysis, ctx) => {
+  // Pugh-poängen ska vara en per kriterium : saknade poäng räknas som « likvärdig » (0) och överflödiga
+  // tas bort, så att tabellen alltid går att visa. Poängen begränsas till −1, 0 och +1.
+  .transform((analysis) => {
     const n = analysis.pugh.criteria.length;
-    analysis.pugh.options.forEach((option, i) => {
-      if (option.scores.length !== n) {
-        ctx.addIssue({
-          code: "custom",
-          path: ["pugh", "options", i, "scores"],
-          message: `Pugh-poängen måste vara ${n} stycken (ett per kriterium)`,
-        });
-      }
-    });
+    const options = analysis.pugh.options.map((option) => ({
+      ...option,
+      scores: Array.from({ length: n }, (_, i) => Math.sign(Math.round(option.scores[i] ?? 0))),
+    }));
+    return { ...analysis, pugh: { ...analysis.pugh, options } };
   });
 export type Analysis = z.output<typeof AnalysisSchema>;
 
 // Ett koncept är en kort idé från brainstormen, innan den utvecklats till en full analys.
 export const ConceptSchema = z.object({
-  title: z.string().trim().min(1).max(160),
+  title: ShortText(160),
   approach: Approach,
   summary: Text,
-  target_group: Text,
-  how_cheaper: Text,
-  unit_cost_eur: z.coerce.number().min(0).max(10_000_000).nullable().default(null),
-  market_price_eur: z.coerce.number().min(0).max(10_000_000).nullable().default(null),
+  target_group: OptText(1500),
+  how_cheaper: OptText(1500),
+  unit_cost_eur: MoneyOrNull,
+  market_price_eur: MoneyOrNull,
   difficulty: Rating,
 });
 export type Concept = z.output<typeof ConceptSchema>;
 
 export const BrainstormResponseSchema = z.object({
-  concepts: z.array(ConceptSchema).min(1).max(10),
+  // Ett ogiltigt koncept i listan ska inte fälla de andra.
+  concepts: z
+    .preprocess(
+      (v) => (Array.isArray(v) ? v.filter((c) => ConceptSchema.safeParse(c).success) : v),
+      z.array(ConceptSchema).min(1),
+    )
+    .transform((concepts) => concepts.slice(0, 10)),
 });
 
 export const BrainstormRequestSchema = z.object({
@@ -169,11 +219,8 @@ export const CheaperRequestSchema = z.object({
 
 export const CheaperResponseSchema = z.object({
   analysis: AnalysisSchema,
-  summary: Text,
-  changes: z
-    .array(z.object({ change: Text, effect: Text }))
-    .min(1)
-    .max(12),
+  summary: OptText(1500),
+  changes: List(z.object({ change: Text, effect: OptText(1500) }), 0, 12),
 });
 
 export const RestoreRequestSchema = z.object({ version: z.number().int().min(1) });

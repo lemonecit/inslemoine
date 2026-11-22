@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { readPdf, type Reflowed } from "@/lib/pdf-reflow";
+import { closeDialog, openDialog } from "@/lib/dialog";
 
 type State =
   | { phase: "closed" }
@@ -24,7 +25,7 @@ export default function PdfReader({ src, title, description }: Props) {
 
   useEffect(() => {
     const dialog = dialogRef.current;
-    if (open && dialog && !dialog.open) dialog.showModal();
+    if (open && dialog) openDialog(dialog);
   }, [open]);
 
   const start = async () => {
@@ -85,7 +86,7 @@ export default function PdfReader({ src, title, description }: Props) {
         onKeyDown={(event) => {
           if (event.key === "Escape") {
             event.preventDefault();
-            dialogRef.current?.close();
+            if (dialogRef.current) closeDialog(dialogRef.current);
           }
         }}
         onClose={() => {
@@ -99,7 +100,7 @@ export default function PdfReader({ src, title, description }: Props) {
               <button
                 type="button"
                 className="a11y-button"
-                onClick={() => dialogRef.current?.close()}
+                onClick={() => dialogRef.current && closeDialog(dialogRef.current)}
               >
                 Fermer
               </button>

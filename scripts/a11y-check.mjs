@@ -83,6 +83,47 @@ const scenarios = [
     },
   },
   {
+    name: "Mode « Lire en grand » sans <dialog> natif (ancien navigateur) : s'ouvre, se ferme, focus rendu",
+    path: "/",
+    prefs: { magnifier: "on" },
+    noNativeDialog: true,
+    setup: async (page) => {
+      await page.focus('[data-read-section="qui-sommes-nous"]');
+      await page.keyboard.press("Enter");
+      await page.waitForSelector("dialog.reader[open][data-fallback]");
+    },
+    after: async (page, problems) => {
+      // Il y a deux <dialog class="reader"> (Lire en grand et PDF) : on cible celui de « Lire en grand ».
+      const reader = 'dialog.reader[aria-labelledby="reader-title"]';
+      const covers = await page.evaluate((selector) => {
+        const rect = document.querySelector(selector).getBoundingClientRect();
+        return rect.width >= innerWidth - 1 && rect.height >= innerHeight - 1;
+      }, reader);
+      if (!covers) problems.push("le lecteur de secours doit couvrir tout l'écran");
+      const inside = await page.evaluate((selector) => document.querySelector(selector).contains(document.activeElement), reader);
+      if (!inside) problems.push("le focus doit entrer dans le lecteur de secours");
+      await page.keyboard.press("Escape");
+      await page.waitForFunction((selector) => !document.querySelector(selector).hasAttribute("open"), reader);
+      const back = await page.evaluate(() => document.activeElement?.getAttribute("data-read-section"));
+      if (back !== "qui-sommes-nous") problems.push("le focus doit revenir au bouton « Lire en grand »");
+      const hidden = await page.evaluate((selector) => getComputedStyle(document.querySelector(selector)).display === "none", reader);
+      if (!hidden) problems.push("le lecteur fermé doit être masqué");
+    },
+  },
+  {
+    name: "Première visite sans <dialog> natif : la fenêtre d'information s'affiche et reste utilisable",
+    path: "/",
+    firstVisit: true,
+    noNativeDialog: true,
+    setup: (page) => page.waitForSelector("dialog.consent[open][data-fallback]"),
+    after: async (page, problems) => {
+      await page.getByRole("button", { name: /J.ai compris/ }).click();
+      await page.waitForFunction(() => !document.querySelector("dialog.consent"));
+      const stored = await page.evaluate(() => localStorage.getItem("ila-consent"));
+      if (!stored) problems.push("le choix doit être mémorisé après « J'ai compris »");
+    },
+  },
+  {
     name: "Lecteur PDF accessible",
     path: "/",
     setup: async (page) => {
@@ -112,6 +153,13 @@ async function run(scenario) {
     },
     { prefs: scenario.prefs, acknowledged: !scenario.firstVisit },
   );
+  if (scenario.noNativeDialog) {
+    // Simule un navigateur sans <dialog> : showModal et close n'existent pas.
+    await context.addInitScript(() => {
+      Object.defineProperty(HTMLDialogElement.prototype, "showModal", { value: undefined, configurable: true });
+      Object.defineProperty(HTMLDialogElement.prototype, "close", { value: undefined, configurable: true });
+    });
+  }
 
   const page = await context.newPage();
   const problems = [];
@@ -150,6 +198,8 @@ async function run(scenario) {
   for (const violation of violations) {
     problems.push(`axe ${violation.id} (${violation.impact}) : ${violation.nodes.join(" | ")}`);
   }
+
+  if (scenario.after) await scenario.after(page, problems);
 
   const external = [...hosts].filter((host) => host !== baseHost);
   if (external.length > 0) problems.push(`requête vers un autre domaine : ${external.join(", ")}`);

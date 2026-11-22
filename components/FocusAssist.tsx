@@ -14,6 +14,7 @@ import {
   subscribe,
 } from "@/lib/a11y-prefs";
 import { FALC } from "@/lib/falc";
+import { closeDialog, openDialog } from "@/lib/dialog";
 
 type Shown = {
   el: HTMLElement;
@@ -153,7 +154,7 @@ export default function FocusAssist() {
 
   useEffect(() => {
     const dialog = dialogRef.current;
-    if (content && dialog && !dialog.open) dialog.showModal();
+    if (content && dialog) openDialog(dialog);
   }, [content]);
 
   const changeSize = (next: number) => {
@@ -185,7 +186,7 @@ export default function FocusAssist() {
         onKeyDown={(event) => {
           if (event.key === "Escape") {
             event.preventDefault();
-            dialogRef.current?.close();
+            if (dialogRef.current) closeDialog(dialogRef.current);
           }
         }}
         onClose={() => {
@@ -199,7 +200,7 @@ export default function FocusAssist() {
               <button
                 type="button"
                 className="a11y-button"
-                onClick={() => dialogRef.current?.close()}
+                onClick={() => dialogRef.current && closeDialog(dialogRef.current)}
               >
                 Fermer
               </button>

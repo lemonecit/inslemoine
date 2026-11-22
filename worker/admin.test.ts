@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- testerna ändrar fritt i JSON-liknande data för att likna slarviga AI-svar */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { importCsv, importJson, parseCsv, parsePrice } from "../lib/admin/import";
@@ -123,10 +124,60 @@ test("Pugh-summor räknas ut i koden och svårighetsgrad vänds", () => {
   assert.equal(buildabilityFromDifficulty(5), 1);
 });
 
-test("analysen avvisas om Pugh-poängen inte matchar kriterierna", () => {
-  const broken = structuredClone(analysis);
-  broken.pugh.options[0].scores = [1];
-  assert.equal(AnalysisSchema.safeParse(broken).success, false);
+test("Pugh-poängen som inte matchar kriterierna rättas i stället för att avvisa svaret", () => {
+  const short = structuredClone(analysis);
+  short.pugh.options[0].scores = [1];
+  const fixed = AnalysisSchema.parse(short);
+  assert.equal(fixed.pugh.options[0].scores.length, fixed.pugh.criteria.length);
+  assert.deepEqual(fixed.pugh.options[0].scores, [1, 0, 0]);
+
+  const long = structuredClone(analysis);
+  long.pugh.options[0].scores = [1, 1, 1, 1, 1, 1];
+  assert.equal(AnalysisSchema.parse(long).pugh.options[0].scores.length, 3);
+});
+
+test("slarvigt AI-svar rättas : null, siffror som text, för långa texter och listor, synonymer", () => {
+  const sloppy = structuredClone(analysis) as Record<string, any>;
+  sloppy.proposal.approach = "Hybrid (mjukvara + 3D-print)";
+  sloppy.proposal.summary = "x".repeat(5000);
+  sloppy.bottlenecks = Array.from({ length: 20 }, (_, i) => `Flaskhals ${i}`);
+  sloppy.assumptions = null;
+  sloppy.feasibility.difficulty = "7";
+  sloppy.feasibility.market_price_eur = "ca 1 200 €";
+  sloppy.feasibility.assumptions = null;
+  sloppy.impact.grant_fit = 3.6;
+  sloppy.swot.threats = [];
+  sloppy.bom = [
+    { item: "Bra rad", quantity: "2", unit_cost_eur: "4,5 €", note: null, cheaper_alternative: null },
+    { item: "Rad utan pris", quantity: 1 },
+    "skräp",
+  ];
+  sloppy.pugh.criteria[0].weight = 9;
+  sloppy.pugh.options[0].scores = [2, "-3", null];
+  const parsed = AnalysisSchema.parse(sloppy);
+  assert.equal(parsed.proposal.approach, "hybrid");
+  assert.equal(parsed.proposal.summary.length, 1500);
+  assert.equal(parsed.bottlenecks.length, 8);
+  assert.deepEqual(parsed.feasibility.assumptions, []);
+  assert.equal(parsed.feasibility.difficulty, 5);
+  assert.equal(parsed.feasibility.market_price_eur, 1200);
+  assert.equal(parsed.impact.grant_fit, 4);
+  assert.deepEqual(parsed.swot.threats, []);
+  assert.equal(parsed.bom.length, 1);
+  assert.equal(parsed.bom[0].unit_cost_eur, 4.5);
+  assert.equal(parsed.bom[0].note, "");
+  assert.equal(parsed.pugh.criteria[0].weight, 5);
+  assert.deepEqual(parsed.pugh.options[0].scores, [1, -1, 0]);
+});
+
+test("det som verkligen saknas avvisas fortfarande", () => {
+  const noTitle = structuredClone(analysis) as Record<string, any>;
+  delete noTitle.proposal.title;
+  assert.equal(AnalysisSchema.safeParse(noTitle).success, false);
+  const noPugh = structuredClone(analysis) as Record<string, any>;
+  noPugh.pugh.criteria = [];
+  assert.equal(AnalysisSchema.safeParse(noPugh).success, false);
+  assert.equal(AnalysisSchema.safeParse({}).success, false);
 });
 
 test("Markdown-exporten innehåller de viktiga avsnitten", () => {
@@ -198,9 +249,12 @@ test("koncept och billigare-svar valideras", () => {
   assert.equal(concept.unit_cost_eur, 0);
   assert.equal(concept.market_price_eur, null);
   assert.equal(BrainstormResponseSchema.safeParse({ concepts: [] }).success, false);
+  // Ett ogiltigt koncept fäller inte de andra.
+  const mixed = BrainstormResponseSchema.parse({ concepts: [concept, { title: "", approach: "?" }] });
+  assert.equal(mixed.concepts.length, 1);
   const cheaper = CheaperResponseSchema.safeParse({ analysis, summary: "Billigare.", changes: [{ change: "Byt modul", effect: "−2 €" }] });
   assert.equal(cheaper.success, true);
-  assert.equal(CheaperResponseSchema.safeParse({ analysis, summary: "x", changes: [] }).success, false);
+  assert.equal(CheaperResponseSchema.safeParse({ analysis, summary: "x", changes: [{ change: "Utan effekt" }] }).success, true);
   assert.equal(AnalyzeRequestSchema.safeParse({}).success, false);
   assert.equal(AnalyzeRequestSchema.safeParse({ concept }).success, true);
 });
