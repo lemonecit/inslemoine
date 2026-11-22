@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import BrainstormView, { EMPTY_BRAINSTORM, type BrainstormState } from "./BrainstormView";
+import CallDetail from "./CallDetail";
+import FundingView from "./FundingView";
 import IdeaDetail from "./IdeaDetail";
 import IdeasView from "./IdeasView";
 import ImportView from "./ImportView";
@@ -12,6 +14,7 @@ import { Notice } from "./shared";
 const TABS = [
   { hash: "ideer", label: "Idéer" },
   { hash: "brainstorma", label: "Brainstorma" },
+  { hash: "finansiering", label: "Finansiering" },
   { hash: "produkter", label: "Produkter" },
   { hash: "importera", label: "Importera" },
 ] as const;
@@ -31,7 +34,8 @@ export default function AdminApp() {
   const first = useRef(true);
 
   const ideaId = /^ide\/([\w-]{1,64})$/.exec(hash)?.[1];
-  const tab = ideaId ? "ideer" : (TABS.find((t) => t.hash === hash)?.hash ?? "ideer");
+  const callId = /^bidrag\/([\w-]{1,64})$/.exec(hash)?.[1];
+  const tab = ideaId ? "ideer" : callId ? "finansiering" : (TABS.find((t) => t.hash === hash)?.hash ?? "ideer");
 
   // Vid byte av vy flyttas fokus till vyns rubrik så att skärmläsare och tangentbord följer med.
   useEffect(() => {
@@ -84,6 +88,10 @@ export default function AdminApp() {
         <div ref={view}>
           {ideaId ? (
             <IdeaDetail id={ideaId} onBack={() => go("ideer")} onChanged={() => setIdeasKey((n) => n + 1)} />
+          ) : callId ? (
+            <CallDetail id={callId} onBack={() => go("finansiering")} onChanged={() => undefined} />
+          ) : tab === "finansiering" ? (
+            <FundingView onOpenCall={(id) => go(`bidrag/${id}`)} />
           ) : tab === "brainstorma" ? (
             <BrainstormView
               state={brainstorm}

@@ -85,17 +85,65 @@ const cheaper = {
   ],
 };
 
+// Finansiering : utlysning, matchning (ett svar per idé-id som finns i frågan) och ansökningsutkast.
+const callExtraction = {
+  title: "Appel à projets Numérique inclusif",
+  funder: "Fondation Exemple",
+  kind: "foundation",
+  url: "",
+  deadline: "2027-03-15",
+  amount_min_eur: 5000,
+  amount_max_eur: 20000,
+  eligibility: "Associations loi 1901 déclarées depuis plus d'un an.",
+  requirements: ["Statuts", "Budget prévisionnel", "Derniers comptes annuels"],
+  summary: "Finansierar projekt som gör digitala tjänster tillgängliga för personer med funktionsnedsättning.",
+  status: "new",
+  next_step: "",
+  next_step_date: null,
+  notes: "",
+};
+
+const draft = {
+  title: "Demande de soutien : Numérique inclusif",
+  content:
+    "# Demande de soutien\n\n## Contexte et besoin\nL'association Institut Lemoine Accessibilité développe des solutions numériques accessibles.\n\n## Budget\n[À COMPLÉTER: budget détaillé]\n\n## Organisation\n[À COMPLÉTER: composition du bureau, numéro RNA]\n",
+};
+
+function matchesFor(userText) {
+  const ids = [...userText.matchAll(/"id": "([0-9a-f-]{36})"/g)].map((m) => m[1]);
+  return {
+    matches: ids.map((id, i) => ({
+      idea_id: id,
+      score: i === 0 ? 4 : 2,
+      rationale: i === 0 ? "Passar väl med utlysningens syfte." : "Svagare koppling till utlysningen.",
+      gaps: i === 0 ? ["Kräver bokslut som föreningen ännu saknar."] : [],
+    })),
+  };
+}
+
 createServer((req, res) => {
   let body = "";
   req.on("data", (chunk) => (body += chunk));
   req.on("end", () => {
+    let userText = "";
+    try {
+      userText = JSON.parse(body).messages.at(-1).content;
+    } catch {
+      // Anropet var inte JSON : svara med analysen.
+    }
     const reply = body.includes("[UPPGIFT:EXTRAHERA]")
       ? extraction
       : body.includes("[UPPGIFT:BRAINSTORM]")
         ? brainstorm
         : body.includes("[UPPGIFT:BILLIGARE]")
           ? cheaper
-          : analysis;
+          : body.includes("[UPPGIFT:UTLYSNING]")
+            ? callExtraction
+            : body.includes("[UPPGIFT:MATCHNING]")
+              ? matchesFor(userText)
+              : body.includes("[UPPGIFT:UTKAST]")
+                ? draft
+                : analysis;
     res.setHeader("content-type", "application/json");
     res.end(JSON.stringify({ choices: [{ message: { content: JSON.stringify(reply) } }] }));
   });

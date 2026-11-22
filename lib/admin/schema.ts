@@ -52,19 +52,19 @@ export type Product = ProductInput & {
 // AI-modeller är slarviga med formen : null i stället för tom text, siffror som text, för långa texter
 // och listor, synonymer för lösningstyp. Schemat rättar sådant i stället för att avvisa hela svaret.
 // Det som fortfarande avvisas är det som verkligen saknas (t.ex. ingen titel eller ingen lista alls).
-const clip = (max: number) => (s: string) => (s.length > max ? `${s.slice(0, max - 1)}…` : s);
-const nullToEmpty = (v: unknown) => (v === null || v === undefined ? "" : typeof v === "number" ? String(v) : v);
+export const clip = (max: number) => (s: string) => (s.length > max ? `${s.slice(0, max - 1)}…` : s);
+export const nullToEmpty = (v: unknown) => (v === null || v === undefined ? "" : typeof v === "number" ? String(v) : v);
 const toNumber = (v: unknown): number => {
   if (typeof v === "number") return v;
   if (typeof v !== "string" || v.trim() === "") return Number.NaN;
   return Number(v.replace(/[^\d.,-]/g, "").replace(",", "."));
 };
 
-const ShortText = (max: number) => z.preprocess(nullToEmpty, z.string().trim().min(1)).transform(clip(max));
-const OptText = (max: number) => z.preprocess(nullToEmpty, z.string().trim()).transform(clip(max));
+export const ShortText = (max: number) => z.preprocess(nullToEmpty, z.string().trim().min(1)).transform(clip(max));
+export const OptText = (max: number) => z.preprocess(nullToEmpty, z.string().trim()).transform(clip(max));
 const Text = ShortText(1500);
 
-const List = <T extends z.ZodType>(item: T, min: number, max: number) =>
+export const List = <T extends z.ZodType>(item: T, min: number, max: number) =>
   z
     .preprocess(
       (v) => (Array.isArray(v) ? v.filter((x) => x !== null && !(typeof x === "string" && x.trim() === "")) : v ?? []),
@@ -73,11 +73,11 @@ const List = <T extends z.ZodType>(item: T, min: number, max: number) =>
     .transform((items) => items.slice(0, max));
 const TextList = (min: number, max: number) => List(Text, min, max);
 
-const Rating = z
+export const Rating = z
   .preprocess(toNumber, z.number())
   .transform((n) => Math.min(5, Math.max(1, Math.round(n))));
 const Money = z.preprocess(toNumber, z.number().min(0)).transform((n) => Math.min(n, 10_000_000));
-const MoneyOrNull = z.preprocess((v) => {
+export const MoneyOrNull = z.preprocess((v) => {
   if (v === null || v === undefined || v === "") return null;
   const n = toNumber(v);
   return Number.isFinite(n) && n >= 0 ? Math.min(n, 10_000_000) : null;
