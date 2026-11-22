@@ -223,7 +223,7 @@ async function cleanup(page) {
   check(exported.includes("Texte final"), "utkastet ska kunna exporteras som Markdown");
   await axe(page, "utlysning (detalj med checklista, matchning och utkast)");
 
-  await page.getByLabel("Status").selectOption("preparing");
+  await page.getByLabel("Status", { exact: true }).selectOption("preparing");
   await page.getByRole("button", { name: "Spara ändringar" }).click();
   await page.getByText("Ändringarna är sparade.").waitFor();
   await page.getByRole("button", { name: "Ta bort utlysningen" }).click();
