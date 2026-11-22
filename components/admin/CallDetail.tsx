@@ -199,7 +199,9 @@ function MatchCard({ call, onChanged }: { call: CallDetailType; onChanged: () =>
 function ChecklistCard({ call, onChanged }: { call: CallDetailType; onChanged: () => void }) {
   const [label, setLabel] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const done = call.checklist.filter((i) => i.done).length;
+  const [pending, setPending] = useState<Record<string, boolean>>({});
+  const isDone = (item: ChecklistItem) => pending[item.id] ?? item.done;
+  const done = call.checklist.filter(isDone).length;
 
   async function run(action: () => Promise<unknown>) {
     setError(null);
@@ -211,8 +213,22 @@ function ChecklistCard({ call, onChanged }: { call: CallDetailType; onChanged: (
     }
   }
 
-  const toggle = (item: ChecklistItem) =>
-    run(() => api(`/api/calls/${call.id}/checklist/${item.id}`, { method: "PATCH", body: { done: !item.done } }));
+  const toggle = async (item: ChecklistItem) => {
+    const next = !(pending[item.id] ?? item.done);
+    // Rutan ändras direkt ; misslyckas sparandet backas den.
+    setPending((p) => ({ ...p, [item.id]: next }));
+    try {
+      await api(`/api/calls/${call.id}/checklist/${item.id}`, { method: "PATCH", body: { done: next } });
+      onChanged();
+    } catch (e) {
+      setPending((p) => {
+        const rest = { ...p };
+        delete rest[item.id];
+        return rest;
+      });
+      setError(errorMessage(e));
+    }
+  };
 
   return (
     <div className="admin-card">
@@ -228,8 +244,8 @@ function ChecklistCard({ call, onChanged }: { call: CallDetailType; onChanged: (
           {call.checklist.map((item) => (
             <li key={item.id}>
               <label className="admin-radio">
-                <input type="checkbox" checked={item.done} onChange={() => toggle(item)} />
-                <span className={item.done ? "admin-done" : undefined}>{item.label}</span>
+                <input type="checkbox" checked={isDone(item)} onChange={() => toggle(item)} />
+                <span className={isDone(item) ? "admin-done" : undefined}>{item.label}</span>
               </label>
               <button
                 type="button"
