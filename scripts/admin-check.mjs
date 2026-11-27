@@ -121,6 +121,10 @@ async function cleanup(page) {
   // Gör billigare : ny version med lägre kostnad, och den gamla kan återställas
   await page.getByRole("button", { name: "Gör billigare" }).click();
   await page.getByRole("heading", { name: "Resultat: version 2" }).waitFor({ timeout: 30000 });
+  // Sidan hämtar den nya versionen efter svaret : vänta in den i stället för att läsa kostnadsraden direkt.
+  await page
+    .waitForFunction(() => /Version\s*2/.test(document.querySelector(".admin-costline")?.textContent ?? ""), null, { timeout: 15000 })
+    .catch(() => undefined);
   check(/99 % billigare/.test(await costline()), `kostnadsraden efter « billigare » fel : ${await costline()}`);
   check(await page.getByText("Hårdvaran är borttagen och driften förenklad.").first().isVisible(), "ändringslistan saknas");
   check(await page.getByText("Tog bort mikrokontrollern och höljet").first().isVisible(), "ändringarna visas inte");
