@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import LegalPage from "@/components/LegalPage";
 import Todo from "@/components/Todo";
+import { CONTACT_EMAIL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Mentions légales",
@@ -17,29 +18,23 @@ export default function MentionsLegales() {
         1<sup>er</sup> juillet 1901.
       </p>
       <ul>
+        <li>Numéro RNA : W751287217 (Préfecture de police de Paris)</li>
+        <li>Siège social : 1 rue d’Enghien, 75010 Paris, France</li>
+        <li>Directeur de la publication : Pierre Lemon, Président</li>
         <li>
-          Siège social : <Todo>adresse postale</Todo>, Paris, France
-        </li>
-        <li>
-          Numéro RNA : <Todo>numéro d’enregistrement</Todo>
-        </li>
-        <li>
-          Numéro SIREN : <Todo>si l’association en possède un</Todo>
-        </li>
-        <li>
-          Directeur ou directrice de la publication : <Todo>nom et fonction</Todo>
-        </li>
-        <li>
-          Contact : <Todo>adresse de courriel de l’association</Todo>
+          Contact : <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
         </li>
       </ul>
 
       <h2>Hébergement</h2>
       <p>
-        <Todo>
-          nom, adresse et site web de l’hébergeur (par exemple Cloudflare, Inc.
-          si le site est publié sur Cloudflare)
-        </Todo>
+        Le site est hébergé par Cloudflare, Inc., 101 Townsend St, San
+        Francisco, CA 94107, États-Unis. Téléphone : +1 (650) 319-8930. Site
+        web :{" "}
+        <a href="https://www.cloudflare.com" rel="noopener noreferrer">
+          www.cloudflare.com
+        </a>
+        .
       </p>
 
       <h2>Propriété intellectuelle</h2>

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import LegalPage from "@/components/LegalPage";
 import Todo from "@/components/Todo";
-import { SITE_NAME } from "@/lib/site";
+import { CONTACT_EMAIL, SITE_NAME } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Déclaration d’accessibilité",
@@ -124,7 +124,7 @@ export default function DeclarationAccessibilite() {
       <p>
         Si vous n’arrivez pas à accéder à un contenu ou à un service, ou si vous
         constatez un défaut d’accessibilité, écrivez-nous :{" "}
-        <Todo>adresse de courriel de contact</Todo>. Nous vous répondrons sous{" "}
+        <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>. Nous vous répondrons sous{" "}
         <Todo>délai de réponse, par exemple 5 jours ouvrés</Todo>, et nous
         pourrons vous fournir le contenu sous une autre forme.
       </p>

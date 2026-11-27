@@ -3,6 +3,7 @@ import Link from "next/link";
 import LegalPage from "@/components/LegalPage";
 import Todo from "@/components/Todo";
 import { SERVICES } from "@/lib/consent";
+import { CONTACT_EMAIL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Politique de confidentialité",
@@ -24,7 +25,7 @@ export default function Confidentialite() {
         Le responsable du traitement est l’Institut Lemoine Accessibilité,
         association loi 1901 dont les coordonnées figurent dans les{" "}
         <Link href="/mentions-legales" prefetch={false}>mentions légales</Link>. Pour toute
-        question sur vos données : <Todo>adresse de courriel dédiée</Todo>.
+        question sur vos données : <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
       </p>
 
       <h2>Quelles données, pourquoi et combien de temps ?</h2>
@@ -54,7 +55,8 @@ export default function Confidentialite() {
 
       <h3>Journaux techniques de l’hébergeur</h3>
       <p>
-        Comme tout site web, le serveur qui délivre les pages enregistre
+        Comme tout site web, le serveur qui délivre les pages (Cloudflare, Inc.,
+        société américaine) enregistre
         automatiquement des informations techniques (adresse IP, date et
         heure, page demandée, type de navigateur) pour assurer la sécurité et
         le bon fonctionnement du service. Ce traitement repose sur
