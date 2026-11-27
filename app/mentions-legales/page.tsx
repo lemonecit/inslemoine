@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import LegalPage from "@/components/LegalPage";
-import Todo from "@/components/Todo";
 import { CONTACT_EMAIL } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -42,7 +41,19 @@ export default function MentionsLegales() {
         Sauf mention contraire, les textes et éléments graphiques de ce site
         appartiennent à l’Institut Lemoine Accessibilité. Les solutions
         open-source publiées par l’association sont soumises à la licence
-        indiquée dans chacun de leurs dépôts. <Todo>licence applicable aux contenus du site</Todo>
+        indiquée dans chacun de leurs dépôts.
+      </p>
+      <p>
+        Les contenus rédactionnels et pédagogiques de ce site sont mis à
+        disposition selon les termes de la{" "}
+        <a
+          href="https://creativecommons.org/licenses/by-sa/4.0/deed.fr"
+          rel="license noopener noreferrer"
+        >
+          Licence Creative Commons Attribution - Partage dans les Mêmes
+          Conditions 4.0 International (CC BY-SA 4.0)
+        </a>
+        , sauf mention contraire.
       </p>
 
       <h2>Accessibilité</h2>
